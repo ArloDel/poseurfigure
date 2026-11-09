@@ -10,16 +10,18 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            FigureProfileSeeder::class,
+            PoseCatalogSeeder::class,
         ]);
+
+        if (app()->environment('local')) {
+            User::firstOrCreate(
+                ['email' => 'collector@figurepose.test'],
+                ['name' => 'Demo Collector', 'password' => 'password'],
+            );
+        }
     }
 }
