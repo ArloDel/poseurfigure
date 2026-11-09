@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FigurePose UI Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Bowlby+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0D1133;
+  --line:#04061A;
+  --chalk:#EEF0FF;
+  --mute:#B4B9E6;
+  --blue:#4D6BFF;
+  --violet:#A36BFF;
+  --pink:#FF5FB4;
+  --cyan:#36D6FF;
+  --yellow:#FFD84D;
+  --red:#FF4D6A;
+  --green:#3DDC97;
+  /* glass: diagonal sheen streak + frosted tint */
+  --glass:
+    linear-gradient(118deg,rgba(255,255,255,0) 22%,rgba(255,255,255,.20) 30%,rgba(255,255,255,0) 40%),
+    linear-gradient(150deg,rgba(255,255,255,.26),rgba(255,255,255,.07) 55%,rgba(163,107,255,.10));
+  --glass-edge:inset 0 1.5px 0 rgba(255,255,255,.65),inset 0 0 0 1px rgba(255,255,255,.22),inset 0 -14px 28px rgba(163,107,255,.16);
+  --hard:4px 4px 0 var(--line);
+  --display:"Bowlby One",system-ui,sans-serif;
+  --body:"Archivo",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--body);color:var(--chalk);background:#070A22;
+  display:flex;gap:40px;align-items:center;justify-content:center;
+  min-height:100vh;padding:32px 16px;
+  background-image:radial-gradient(rgba(77,107,255,.22) 1.3px,transparent 1.7px);
+  background-size:14px 14px;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+svg{display:block}
+img{display:block}
+
+/* ---------- Screen index (desktop) ---------- */
+.index{width:230px;align-self:center}
+.index h1{font-family:var(--display);font-size:28px;line-height:1;letter-spacing:.5px}
+.index p{color:var(--mute);font-size:13px;margin:8px 0 18px;line-height:1.45}
+.index ol{list-style:none;display:grid;gap:4px;counter-reset:s}
+.index li button{width:100%;text-align:left;padding:7px 10px;border-radius:8px;font-size:14px;font-weight:600;border:2px solid transparent;display:flex;gap:10px;align-items:center}
+.index li button::before{counter-increment:s;content:counter(s);font-size:11px;color:var(--mute);width:16px}
+.index li button:hover{background:rgba(255,255,255,.06)}
+.index li button[aria-current=true]{border-color:var(--line);background:var(--yellow);color:var(--line);box-shadow:3px 3px 0 var(--line)}
+.index li button[aria-current=true]::before{color:var(--line)}
+.index .credit{margin-top:18px;font-size:11.5px;color:var(--mute);line-height:1.45}
+.index .credit a{color:var(--chalk)}
+
+/* ---------- Phone ---------- */
+.phone{
+  width:390px;height:844px;flex:none;position:relative;overflow:hidden;
+  border-radius:46px;border:3px solid var(--line);background:var(--ink);
+  box-shadow:0 0 0 9px #1B2152,0 0 0 12px var(--line),14px 16px 0 12px var(--line);
+  isolation:isolate;
+}
+/* saturated blobs so the glass always has colour to bend */
+.phone::before{
+  content:"";position:absolute;inset:-25%;z-index:-2;
+  background:
+    radial-gradient(30% 20% at 14% 10%,rgba(77,107,255,.95),transparent 70%),
+    radial-gradient(26% 18% at 92% 30%,rgba(255,95,180,.7),transparent 70%),
+    radial-gradient(32% 22% at 78% 64%,rgba(163,107,255,.9),transparent 70%),
+    radial-gradient(28% 20% at 8% 82%,rgba(54,214,255,.6),transparent 70%),
+    radial-gradient(30% 18% at 60% 98%,rgba(77,107,255,.8),transparent 70%);
+  filter:blur(4px);
+}
+.phone::after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:radial-gradient(rgba(4,6,26,.5) 1.4px,transparent 1.8px);background-size:7px 7px;
+  -webkit-mask:linear-gradient(160deg,#000 0%,transparent 40%,transparent 62%,#000 100%);
+          mask:linear-gradient(160deg,#000 0%,transparent 40%,transparent 62%,#000 100%);
+}
+.status{position:absolute;top:0;left:0;right:0;height:46px;z-index:30;display:flex;justify-content:space-between;align-items:center;padding:6px 30px 0;font-size:14px;font-weight:700;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.status .notch{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:112px;height:30px;border-radius:20px;background:var(--line)}
+
+.screen{position:absolute;inset:0;display:none;flex-direction:column}
+.screen.on{display:flex}
+.scroll{flex:1;overflow-y:auto;padding:58px 18px 118px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.scroll.nonav{padding-bottom:28px}
+
+/* ---------- Building blocks ---------- */
+.glass{
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(185%);backdrop-filter:blur(22px) saturate(185%);
+  border:2.5px solid var(--line);border-radius:20px;
+  box-shadow:var(--hard),var(--glass-edge);
+}
+/* thinner glass laid over photos */
+.glass.thin{
+  background:linear-gradient(118deg,rgba(255,255,255,0) 20%,rgba(255,255,255,.2) 30%,rgba(255,255,255,0) 42%),linear-gradient(150deg,rgba(52,62,150,.5),rgba(13,17,51,.66));
+  -webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);
+  box-shadow:3px 3px 0 var(--line),var(--glass-edge);
+  text-shadow:0 1px 2px rgba(4,6,26,.55);
+}
+.panel{border:3px solid var(--line);border-radius:8px;box-shadow:5px 5px 0 var(--line);overflow:hidden;position:relative;background:#1B2152}
+.panel > img.cover{width:100%;height:100%;object-fit:cover}
+/* ben-day dot wash over photos keeps the comic print feel */
+.panel.ben::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(rgba(4,6,26,.28) 1.1px,transparent 1.5px) 0 0/6px 6px;mix-blend-mode:multiply;-webkit-mask:linear-gradient(180deg,transparent 45%,#000);mask:linear-gradient(180deg,transparent 45%,#000)}
+
+h2.title{font-family:var(--display);font-size:30px;line-height:1.02;letter-spacing:.3px;margin-bottom:6px}
+h3.sub{font-family:var(--display);font-size:19px;line-height:1.1;margin:26px 0 12px}
+.lead{color:var(--mute);font-size:15px;line-height:1.45}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.small{font-size:13px;color:var(--mute)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 20px;border-radius:14px;font-weight:800;font-size:16px;border:2.5px solid var(--line);box-shadow:var(--hard);transition:transform .08s,box-shadow .08s;font-stretch:105%}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--line)}
+.btn.pow{background:var(--yellow);color:var(--line)}
+.btn.ghost{background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(170%);backdrop-filter:blur(16px) saturate(170%);box-shadow:var(--hard),var(--glass-edge)}
+.btn.full{width:100%}
+.btn svg{width:20px;height:20px}
+.iconbtn{width:44px;height:44px;border-radius:14px;display:grid;place-items:center}
+.iconbtn svg{width:22px;height:22px}
+
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:700;border:2px solid var(--line);background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.chip.on{background:var(--chalk);color:var(--line)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px}
+.chips::-webkit-scrollbar{display:none}
+
+.src{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:6px;border:2px solid var(--line)}
+.src.cat{background:var(--green);color:var(--line)}
+.src.ai{background:repeating-linear-gradient(-45deg,var(--violet) 0 6px,#8752E6 6px 12px);color:#fff}
+.src svg{width:12px;height:12px}
+
+.bubble{position:relative;background:#fff;color:var(--line);border:2.5px solid var(--line);border-radius:20px;padding:12px 14px;font-weight:700;font-size:14px;line-height:1.35;box-shadow:var(--hard)}
+.bubble::after{content:"";position:absolute;left:28px;bottom:-11px;width:18px;height:18px;background:#fff;border-right:2.5px solid var(--line);border-bottom:2.5px solid var(--line);transform:skewX(-25deg) rotate(45deg)}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.topbar .t{font-family:var(--display);font-size:18px;text-shadow:2px 2px 0 var(--line)}
+
+/* photo with keypoint / bbox overlay, kept at the photo's own ratio so marks line up */
+.shot{position:relative;margin:0 auto;height:100%}
+.shot img{width:100%;height:100%;object-fit:contain}
+.shot svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* ---------- Bottom nav ---------- */
+.nav{position:absolute;left:14px;right:14px;bottom:22px;height:70px;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);padding:0 6px;border-radius:24px}
+.nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--chalk);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.nav button svg{width:24px;height:24px}
+.nav .pill{width:52px;height:32px;border-radius:12px;display:grid;place-items:center;border:2px solid transparent}
+.nav button[aria-current=true] .pill{background:var(--yellow);color:var(--line);border-color:var(--line);box-shadow:2px 2px 0 var(--line)}
+
+/* ---------- Splash ---------- */
+#splash{align-items:center;justify-content:center;text-align:center;cursor:pointer;background:repeating-conic-gradient(from 0deg at 50% 40%,rgba(255,216,77,.14) 0 4deg,transparent 4deg 12deg)}
+.burst{width:290px;height:290px;position:relative}
+.burst::before,.burst img{position:absolute;clip-path:polygon(50% 0,58% 18%,75% 6%,74% 26%,95% 22%,83% 40%,100% 50%,83% 60%,95% 78%,74% 74%,75% 94%,58% 82%,50% 100%,42% 82%,25% 94%,26% 74%,5% 78%,17% 60%,0 50%,17% 40%,5% 22%,26% 26%,25% 6%,42% 18%)}
+.burst::before{content:"";inset:0;background:var(--line)}
+.burst img{inset:7px;width:calc(100% - 14px);height:calc(100% - 14px);object-fit:cover;object-position:50% 38%}
+.burst::after{content:"";position:absolute;inset:-14px;background:var(--yellow);z-index:-1;clip-path:inherit;border-radius:50%;transform:scale(.92);filter:blur(30px);opacity:.5}
+.logo{font-family:var(--display);font-size:46px;line-height:.95;margin-top:16px;text-shadow:4px 4px 0 var(--line);-webkit-text-stroke:2px var(--line);paint-order:stroke fill}
+.logo small{display:block;font-size:22px;color:var(--yellow);margin-top:4px}
+.tag{margin-top:14px;font-size:15px;padding:10px 16px;border-radius:16px}
+@media (prefers-reduced-motion:no-preference){
+  #splash.on .burst{animation:pop .55s cubic-bezier(.2,1.6,.4,1) both}
+  #splash.on .logo{animation:pop .55s .18s cubic-bezier(.2,1.6,.4,1) both}
+}
+@keyframes pop{from{transform:scale(.4) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
+
+/* ---------- Onboarding ---------- */
+.ob-panel{height:400px;margin:6px 0 -60px}
+.ob-text{position:relative;z-index:2;margin:0 10px 0;padding:18px}
+.ob-step{font-family:var(--display);font-size:15px;color:var(--yellow);text-shadow:2px 2px 0 var(--line)}
+.dots{display:flex;gap:8px;margin:20px 0}
+.dots i{width:10px;height:10px;border-radius:5px;border:2px solid var(--line);background:rgba(255,255,255,.3);transition:width .2s}
+.dots i.on{width:28px;background:var(--yellow)}
+
+/* ---------- Home ---------- */
+.hero{position:relative;height:330px;padding:0;margin-top:4px}
+.hero .collage{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:0}
+.hero .collage img{width:100%;height:100%;object-fit:cover;border-right:3px solid var(--line)}
+.hero .collage img:last-child{border-right:0}
+.hero .over{position:absolute;left:12px;right:12px;bottom:12px;padding:16px}
+.hero .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.recent{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:2px 18px 10px}
+.recent::-webkit-scrollbar{display:none}
+.rcard{flex:none;width:140px;height:176px;text-align:left;padding:0}
+.rcard .cap2{position:absolute;left:6px;right:6px;bottom:6px;padding:7px 9px;border-radius:12px}
+.rcard b{display:block;font-size:13.5px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pcard{height:214px;padding:0;text-align:left;display:block;width:100%}
+.pcard .cap2{position:absolute;left:6px;right:6px;bottom:6px;padding:8px 10px;border-radius:12px}
+.pcard b{display:block;font-size:14px;line-height:1.2}
+.pcard .meta{font-size:12px;color:#E2E5FF;margin-top:2px}
+
+/* ---------- Upload / camera ---------- */
+#upload{background:#05071A}
+.viewfinder{position:absolute;inset:0}
+.viewfinder img{width:100%;height:100%;object-fit:cover;object-position:50% 40%}
+.frame{position:absolute;left:46px;right:46px;top:130px;bottom:240px}
+.frame i{position:absolute;width:42px;height:42px;border:5px solid var(--yellow);filter:drop-shadow(3px 3px 0 var(--line))}
+.frame i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0;border-radius:10px 0 0 0}
+.frame i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0;border-radius:0 10px 0 0}
+.frame i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0;border-radius:0 0 0 10px}
+.frame i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0;border-radius:0 0 10px 0}
+.cam-top{position:absolute;top:56px;left:16px;right:16px;display:flex;justify-content:space-between;z-index:2}
+.cam-tip{position:absolute;left:18px;right:18px;bottom:172px;z-index:2}
+.cam-bar{position:absolute;left:14px;right:14px;bottom:28px;height:120px;border-radius:28px;display:flex;align-items:center;justify-content:space-around;z-index:2}
+.shutter{width:78px;height:78px;border-radius:50%;background:var(--yellow);border:3px solid var(--line);box-shadow:var(--hard);display:grid;place-items:center}
+.shutter::after{content:"";width:58px;height:58px;border-radius:50%;border:3px solid var(--line)}
+.shutter:active{transform:translate(3px,3px);box-shadow:none}
+.thumb{width:52px;height:52px;border-radius:14px;overflow:hidden;border:2.5px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+
+/* ---------- Preview ---------- */
+.photo{height:400px;background:#fff}
+.crop{position:absolute;inset:22px 36px;border:2px dashed rgba(4,6,26,.7);pointer-events:none}
+.crop i{position:absolute;width:16px;height:16px;background:var(--yellow);border:2.5px solid var(--line);border-radius:4px}
+.crop i:nth-child(1){left:-9px;top:-9px}.crop i:nth-child(2){right:-9px;top:-9px}
+.crop i:nth-child(3){left:-9px;bottom:-9px}.crop i:nth-child(4){right:-9px;bottom:-9px}
+.tools{position:absolute;left:10px;bottom:10px;display:flex;gap:8px}
+.tools .btn{height:40px;padding:0 12px;font-size:14px}
+.checks{padding:6px 14px;margin:18px 0 16px}
+.check{display:flex;align-items:center;gap:12px;padding:10px 0;font-size:14.5px;font-weight:600}
+.check+.check{border-top:1.5px solid rgba(255,255,255,.16)}
+.tick{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;border:2px solid var(--line);flex:none}
+.tick svg{width:15px;height:15px}
+.tick.ok{background:var(--green);color:var(--line)}
+.tick.bad{background:var(--red);color:#fff}
+
+/* ---------- Figure select ---------- */
+.bbox{position:absolute;border:3px solid var(--yellow);border-radius:8px;box-shadow:0 0 0 2px var(--line)}
+.bbox span{position:absolute;top:-14px;left:-3px;background:var(--yellow);color:var(--line);font-size:12px;font-weight:800;padding:2px 8px;border:2px solid var(--line);border-radius:6px;white-space:nowrap}
+.bbox.dim{border-color:rgba(255,255,255,.7)}
+.bbox.dim span{background:#fff}
+.profiles{display:grid;gap:10px}
+.prof{display:flex;align-items:center;gap:14px;padding:10px 14px 10px 10px;border-radius:18px;text-align:left;width:100%}
+.prof .panel{width:64px;height:64px;flex:none}
+.prof b{display:block;font-size:16px}
+.prof .radio{margin-left:auto;width:24px;height:24px;border-radius:50%;border:2.5px solid var(--line);background:rgba(255,255,255,.25);flex:none}
+.prof[aria-checked=true]{background:linear-gradient(118deg,rgba(255,255,255,0) 22%,rgba(255,255,255,.25) 30%,rgba(255,255,255,0) 40%),linear-gradient(140deg,rgba(255,216,77,.42),rgba(255,216,77,.12))}
+.prof[aria-checked=true] .radio{background:var(--yellow);box-shadow:inset 0 0 0 4px #fff}
+.conf{height:8px;border-radius:4px;background:rgba(255,255,255,.18);margin-top:6px;overflow:hidden;width:120px}
+.conf i{display:block;height:100%;background:var(--yellow)}
+
+/* ---------- Processing ---------- */
+.strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 20px}
+.strip .panel{height:150px}
+.strip .panel.wide{grid-column:span 2;height:260px;background:#fff}
+.cap{position:absolute;left:8px;top:8px;z-index:2;background:var(--yellow);color:var(--line);font-size:12px;font-weight:800;padding:3px 8px;border:2px solid var(--line);border-radius:4px}
+.steps{padding:6px 16px}
+.step{display:flex;align-items:center;gap:12px;padding:11px 0;font-weight:600;font-size:14.5px}
+.step+.step{border-top:1.5px solid rgba(255,255,255,.16)}
+.step .s{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:800;background:rgba(255,255,255,.15);flex:none}
+.step.done .s{background:var(--green);color:var(--line)}
+.step.active .s{background:var(--yellow);color:var(--line)}
+.step.wait{color:var(--mute)}
+.step em{margin-left:auto;font-style:normal;font-size:12.5px;color:var(--mute)}
+.bar{height:16px;border-radius:9px;border:2.5px solid var(--line);background:rgba(255,255,255,.12);overflow:hidden;margin:16px 0 8px}
+.bar i{display:block;height:100%;width:30%;background:repeating-linear-gradient(-45deg,var(--yellow) 0 8px,#F0C232 8px 16px);border-right:2.5px solid var(--line);transition:width .6s}
+.scanline{position:absolute;left:0;right:0;top:50%;height:3px;background:var(--yellow);box-shadow:0 0 0 2px var(--line),0 0 18px var(--yellow)}
+@media (prefers-reduced-motion:no-preference){.scanline{animation:scan 1.8s ease-in-out infinite alternate}}
+@keyframes scan{from{transform:translateY(-110px)}to{transform:translateY(110px)}}
+
+/* ---------- Results ---------- */
+.summary{padding:12px;display:flex;gap:14px;align-items:center;margin-bottom:6px}
+.summary .panel{width:84px;height:110px;flex:none;background:#fff}
+.stat{font-size:13px;color:var(--mute);line-height:1.6}
+.stat b{color:var(--chalk)}
+.rec{display:block;width:100%;text-align:left;margin-bottom:22px;height:330px;padding:0}
+.rec.ai{border-style:dashed}
+.rec .src{position:absolute;left:10px;top:10px;z-index:2}
+.rec .num{position:absolute;right:12px;top:6px;z-index:2;font-family:var(--display);font-size:30px;color:#fff;-webkit-text-stroke:2px var(--line);paint-order:stroke fill;text-shadow:3px 3px 0 var(--line)}
+.rec .over{position:absolute;left:8px;right:8px;bottom:8px;padding:12px 14px;border-radius:16px}
+.rec h4{font-family:var(--display);font-size:20px;font-weight:400;line-height:1.1}
+.rec .meta{font-size:13px;color:#E2E5FF;margin-top:2px}
+.scores{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.score{font-size:12px;color:#E2E5FF}
+.score b{display:block;font-size:17px;color:#fff;font-weight:800}
+.meter{height:7px;border-radius:4px;background:rgba(255,255,255,.22);margin-top:5px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--cyan)}
+.meter.f i{background:var(--green)}
+
+/* ---------- Pose detail ---------- */
+.detail-art{height:400px;margin:-58px -18px 0;border-radius:0 0 28px 28px;border-width:0 0 3px;box-shadow:0 5px 0 var(--line);background:#fff}
+.detail-top{position:absolute;left:18px;right:18px;top:56px;z-index:3;display:flex;justify-content:space-between}
+.detail-art::before{content:"";position:absolute;left:0;right:0;top:0;height:120px;z-index:1;pointer-events:none;background:linear-gradient(rgba(13,17,51,.75),rgba(13,17,51,0))}
+.toggle{position:absolute;right:18px;top:56px;display:flex;align-items:center;gap:8px;padding:6px 10px 6px 12px;border-radius:14px;font-size:13px;font-weight:700;z-index:2}
+.sw{width:40px;height:24px;border-radius:12px;border:2px solid var(--line);background:rgba(255,255,255,.3);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--line);transition:left .15s}
+[aria-checked=true] .sw{background:var(--yellow)}
+[aria-checked=true] .sw::after{left:18px}
+.head-card{position:relative;z-index:2;margin:-46px 4px 0;padding:16px}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 10px}
+.group{padding:6px 14px 8px;margin-bottom:12px}
+.group h5{font-family:var(--display);font-size:15px;font-weight:400;padding:10px 0 4px;color:var(--yellow);text-shadow:1.5px 1.5px 0 var(--line)}
+.ins{display:flex;gap:12px;padding:10px 0;align-items:flex-start}
+.ins+.ins{border-top:1.5px solid rgba(255,255,255,.16)}
+.ins .n{width:26px;height:26px;border-radius:8px;background:var(--chalk);color:var(--line);border:2px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.ins b{display:block;font-size:14.5px}
+.ins p{font-size:13.5px;color:var(--mute);line-height:1.4;margin-top:2px}
+.ang{margin-left:auto;font-family:var(--display);font-size:16px;white-space:nowrap}
+.ins.est .n{background:transparent;color:var(--chalk);border-style:dashed;border-color:var(--chalk)}
+.warn{display:flex;gap:12px;padding:14px;border-radius:18px;margin-bottom:12px}
+.warn.red{background:linear-gradient(118deg,rgba(255,255,255,0) 22%,rgba(255,255,255,.18) 30%,rgba(255,255,255,0) 40%),linear-gradient(140deg,rgba(255,77,106,.5),rgba(255,77,106,.14))}
+.warn.note{background:linear-gradient(118deg,rgba(255,255,255,0) 22%,rgba(255,255,255,.18) 30%,rgba(255,255,255,0) 40%),linear-gradient(140deg,rgba(77,107,255,.5),rgba(77,107,255,.14))}
+.warn svg{width:24px;height:24px;flex:none}
+.warn b{display:block;font-size:14.5px}
+.warn p{font-size:13.5px;line-height:1.4;margin-top:3px;color:#E4E6FF}
+.actions{position:absolute;left:14px;right:14px;bottom:22px;padding:10px;border-radius:24px;display:flex;gap:10px;z-index:20}
+.actions .btn{flex:1;height:50px;font-size:15px}
+.actions .iconbtn{width:50px;height:50px;border:2.5px solid var(--line);box-shadow:var(--hard);background:rgba(255,255,255,.18)}
+.actions .iconbtn[aria-pressed=true]{background:var(--red)}
+
+.scrim{position:absolute;inset:0;background:rgba(4,6,26,.35);z-index:40;display:none;align-items:flex-end}
+.scrim.on{display:flex}
+.sheet{margin:10px;padding:22px 18px 18px;border-radius:28px;width:100%}
+.sheet h4{font-family:var(--display);font-size:22px;font-weight:400;margin-bottom:8px}
+.sheet ul{margin:12px 0 18px 18px;font-size:14px;line-height:1.5;color:#E4E6FF}
+.sheet .btn{flex:1}
+
+/* ---------- Discover ---------- */
+.search{display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;border-radius:16px;margin-bottom:14px;color:var(--mute);font-size:15px}
+.search svg{width:20px;height:20px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);padding:4px;border-radius:16px;margin-bottom:12px}
+.seg button{height:38px;border-radius:11px;font-weight:700;font-size:14px;color:var(--chalk)}
+.seg button[aria-pressed=true]{background:var(--chalk);color:var(--line);border:2px solid var(--line)}
+
+/* ---------- Favorites / history ---------- */
+.fav{display:flex;gap:12px;align-items:center;padding:8px;border-radius:18px;margin-bottom:12px}
+.fav .panel{width:84px;height:96px;flex:none;box-shadow:3px 3px 0 var(--line)}
+.fav b{font-size:15.5px;display:block}
+.fav .meta{font-size:12.5px;color:var(--mute);margin-top:3px}
+.fav .iconbtn{margin-left:auto;flex:none}
+.empty{text-align:center;padding:30px 10px}
+.empty .panel{width:180px;height:210px;margin:0 auto 22px;transform:rotate(-3deg)}
+.status-chip{font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:6px;border:2px solid var(--line);display:inline-block;margin-top:6px}
+.st-done{background:var(--green);color:var(--line)}
+.st-fail{background:var(--red);color:#fff}
+.st-proc{background:var(--yellow);color:var(--line)}
+
+/* ---------- Profile ---------- */
+.guest{padding:18px;margin-bottom:6px}
+.avatar{width:64px;height:64px;border-radius:20px;border:2.5px solid var(--line);box-shadow:var(--hard);overflow:hidden;flex:none}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.list{padding:2px 16px}
+.item{display:flex;align-items:center;gap:12px;padding:15px 0;font-size:15px;font-weight:600;width:100%;text-align:left}
+.item svg{width:22px;height:22px;flex:none}
+.item+.item{border-top:1.5px solid rgba(255,255,255,.16)}
+.item small{display:block;font-size:12.5px;color:var(--mute);font-weight:500;margin-top:2px}
+.item .end{margin-left:auto;color:var(--mute);font-size:13.5px;display:flex;align-items:center;gap:6px}
+.item .end svg{width:18px;height:18px}
+.item.danger{color:#FF9DB0}
+.credits a{color:var(--chalk)}
+
+.toast{position:absolute;left:50%;bottom:110px;transform:translate(-50%,20px);opacity:0;z-index:60;background:#fff;color:var(--line);font-weight:800;font-size:14px;padding:10px 16px;border-radius:14px;border:2.5px solid var(--line);box-shadow:var(--hard);transition:.25s;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:760px){
+  body{flex-direction:column;padding:16px 16px 40px;gap:20px;justify-content:flex-start}
+  .index{width:100%;max-width:420px}
+  .index ol{display:flex;overflow-x:auto;gap:6px;padding-bottom:6px}
+  .index li button{white-space:nowrap}
+}
+@media (max-width:430px){
+  body{padding:0;gap:0}
+  .index{display:none}
+  .phone{width:100vw;height:100dvh;border-radius:0;border:0;box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<nav class="index" aria-label="Prototype screens">
+  <h1>FigurePose</h1>
+  <p>Clickable UI prototype. Retro comic panels, glass surfaces. Jump to any screen, or tap through the app.</p>
+  <ol id="index"></ol>
+  <p class="credit">Photos are CC-licensed stand-ins from Flickr via Openverse. Full credits in Profile, and in <a href="img/credits.json">img/credits.json</a>.</p>
+</nav>
+
+<main class="phone" id="phone">
+  <div class="status"><span>9:41</span><span class="notch"></span><span>5G ▮▮▮</span></div>
+  <div id="screens"></div>
+  <div class="toast" id="toast" role="status"></div>
+</main>
+
+<script>
+/* ---------- Photos (CC-licensed stand-ins, see img/credits.json) ---------- */
+const PH = {
+  "rider-pair":[276,500], "rider-stance":[376,500], "duo-shelf":[900,675], "flying-cyborg":[900,599],
+  "offroad-jump":[900,599], "trooper-walk":[900,599], "gundam-boost":[900,675], "knight-sword":[357,500],
+  "claymore-draw":[900,600], "figma-hunter":[500,500], "levi-ledge":[600,900], "sinanju-rifle":[900,600],
+  "shield-guard":[900,615], "panther-front":[900,900], "hammer-strike":[900,599], "optimus-stance":[598,900],
+  "skeleton-lunge":[900,598], "bounty-aim":[900,598]
+};
+const img = (slug, alt="", pos="") => `<img class="cover" src="img/${slug}.jpg" alt="${alt}" decoding="async" ${pos?`style="object-position:${pos}"`:""}>`;
+
+/* Keypoints in image pixels, so the overlay lines up at any size. */
+const KP = {
+  "rider-pair": {head:[140,62],neck:[150,112],chest:[150,170],waist:[148,235],lsh:[88,140],rsh:[222,150],lel:[70,215],rel:[240,232],
+    lwr:[52,300],rwr:[236,295],lhip:[112,262],rhip:[185,268],lkn:[80,345],rkn:[178,352],lan:[48,430],ran:[183,450]},
+  "rider-stance": {head:[175,62],neck:[192,105],chest:[195,165],waist:[205,238],lsh:[130,135],rsh:[262,122],lel:[112,185],lwr:[72,185],
+    rel:[284,148],rwr:[300,80],lhip:[150,275],rhip:[235,282],lkn:[80,322],lan:[62,420],rkn:[255,368],ran:[330,450]}
+};
+const BONES = [["head","neck"],["neck","chest"],["chest","waist"],["neck","lsh"],["neck","rsh"],["waist","lhip"],["waist","rhip"],["lhip","rhip"],
+  ["lsh","lel"],["lel","lwr"],["rsh","rel"],["rel","rwr"],["lhip","lkn"],["lkn","lan"],["rhip","rkn"],["rkn","ran"]];
+
+function shot(slug, opt={}){
+  const [w,h] = PH[slug], k = KP[slug], hidden = opt.hidden || [];
+  let svg = "";
+  if (opt.overlay && k){
+    const sw = w/110;
+    svg = `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">` +
+      BONES.map(([a,b])=>{
+        const d = hidden.includes(a)||hidden.includes(b) ? ` stroke-dasharray="${sw*2.5} ${sw*2}"` : "";
+        return `<line x1="${k[a][0]}" y1="${k[a][1]}" x2="${k[b][0]}" y2="${k[b][1]}" stroke="#04061A" stroke-width="${sw*2.6}" stroke-linecap="round"${d}/><line x1="${k[a][0]}" y1="${k[a][1]}" x2="${k[b][0]}" y2="${k[b][1]}" stroke="#FFD84D" stroke-width="${sw*1.2}" stroke-linecap="round"${d}/>`;
+      }).join("") +
+      Object.keys(k).map(j => hidden.includes(j)
+        ? `<circle cx="${k[j][0]}" cy="${k[j][1]}" r="${sw*3.4}" fill="none" stroke="#FF4D6A" stroke-width="${sw*1.6}" stroke-dasharray="${sw*2} ${sw*1.5}"/>`
+        : `<circle cx="${k[j][0]}" cy="${k[j][1]}" r="${sw*2.6}" fill="#FFD84D" stroke="#04061A" stroke-width="${sw*1.3}"/>`).join("") + `</svg>`;
+  }
+  return `<div class="shot" style="aspect-ratio:${w}/${h}">${img(slug, opt.alt||"")}${svg}${opt.extra||""}</div>`;
+}
+
+/* ---------- Icons ---------- */
+const I = {
+  home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  compass:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+  heart:'<path d="M12 20s-7-4.4-9-9a4.8 4.8 0 0 1 9-3 4.8 4.8 0 0 1 9 3c-2 4.6-9 9-9 9z"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>',
+  camera:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+  back:'<path d="M15 5l-7 7 7 7"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  rotate:'<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/>', crop:'<path d="M6 2v16h16"/><path d="M2 6h16v16"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7"/>', x:'<path d="M7 7l10 10M17 7L7 17"/>',
+  warn:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>', info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+  spark:'<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/>',
+  book:'<path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-4a2 2 0 0 0-2 2"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  chevron:'<path d="M9 5l7 7-7 7"/>', flash:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  refresh:'<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>', shield:'<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/>',
+  bell:'<path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>'
+};
+const ic = (n, fill=false) => `<svg viewBox="0 0 24 24" fill="${fill?'currentColor':'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+
+/* ---------- Data ---------- */
+const CATALOG = [
+  {id:"rider", img:"rider-stance", name:"Rider ready stance", cat:"Action", diff:"Medium", profile:"humanoid", match:91, feas:94, src:"cat", pos:"50% 30%"},
+  {id:"lunge", img:"skeleton-lunge", name:"Fencing lunge", cat:"Cinematic", diff:"Hard", profile:"humanoid", match:86, feas:88, src:"cat", pos:"45% 50%"},
+  {id:"ledge", img:"levi-ledge", name:"Ledge lookout", cat:"Calm", diff:"Easy", profile:"anime", match:82, feas:97, src:"cat", pos:"50% 30%"},
+  {id:"fly", img:"flying-cyborg", name:"Flying punch", cat:"Action", diff:"Hard", profile:"humanoid", match:78, feas:71, src:"ai", pos:"55% 40%"},
+  {id:"shield", img:"shield-guard", name:"Shield guard", cat:"Display", diff:"Easy", profile:"humanoid", match:74, feas:96, src:"cat", pos:"40% 40%"},
+  {id:"commander", img:"optimus-stance", name:"Commander stance", cat:"Display", diff:"Easy", profile:"mecha", src:"cat", pos:"50% 40%"},
+  {id:"boost", img:"gundam-boost", name:"Boost dash", cat:"Action", diff:"Medium", profile:"mecha", src:"cat", pos:"50% 45%"},
+  {id:"rifle", img:"sinanju-rifle", name:"Rifle aim", cat:"Cinematic", diff:"Medium", profile:"mecha", src:"cat", pos:"30% 50%"},
+  {id:"draw", img:"claymore-draw", name:"Sword draw", cat:"Cinematic", diff:"Hard", profile:"anime", src:"cat", pos:"50% 40%"},
+  {id:"raise", img:"knight-sword", name:"Blade raise", cat:"Action", diff:"Medium", profile:"anime", src:"cat", pos:"50% 30%"},
+  {id:"aim", img:"bounty-aim", name:"Steady aim", cat:"Cinematic", diff:"Medium", profile:"humanoid", src:"cat", pos:"40% 40%"},
+  {id:"hammer", img:"hammer-strike", name:"Hammer strike", cat:"Action", diff:"Hard", profile:"humanoid", src:"cat", pos:"35% 40%"},
+  {id:"patrol", img:"trooper-walk", name:"Patrol walk", cat:"Calm", diff:"Easy", profile:"humanoid", src:"cat", pos:"72% 50%"},
+];
+const byId = id => CATALOG.find(p => p.id === id);
+let favorites = ["rider","commander","rifle"];
+let detailId = "rider";
+
+const SCREENS = [
+  {id:"splash", label:"Splash"}, {id:"onboarding", label:"Onboarding"}, {id:"home", label:"Home"},
+  {id:"upload", label:"Camera / upload"}, {id:"preview", label:"Image preview"}, {id:"error", label:"Unsuitable photo"},
+  {id:"select", label:"Figure selection"}, {id:"processing", label:"Processing"}, {id:"results", label:"Recommendations"},
+  {id:"detail", label:"Pose detail"}, {id:"discover", label:"Pose gallery"}, {id:"favorites", label:"Favorites"},
+  {id:"history", label:"History"}, {id:"profile", label:"Profile"},
+];
+
+const nav = active => `
+  <nav class="nav glass" aria-label="Main">
+    ${[["home","Home","home"],["discover","Discover","compass"],["favorites","Favorites","heart"],["profile","Profile","user"]].map(([id,l,icon])=>`
+      <button data-go="${id}" aria-current="${active===id}"><span class="pill">${ic(icon, active===id && id==='favorites')}</span><span>${l}</span></button>`).join("")}
+  </nav>`;
+const back = (to, title="") => `
+  <div class="topbar"><button class="iconbtn glass" data-go="${to}" aria-label="Back">${ic("back")}</button>
+  <span class="t">${title}</span><span style="width:44px"></span></div>`;
+const srcBadge = p => p.src==='ai' ? `<span class="src ai">${ic("spark")}AI-generated, unverified</span>` : `<span class="src cat">${ic("check")}Catalog reference</span>`;
+
+const poseCard = p => `
+  <button class="pcard panel ben" data-detail="${p.id}">${img(p.img, p.name, p.pos)}
+    <div class="cap2 glass thin"><b>${p.name}</b><div class="meta">${p.cat}, ${p.diff.toLowerCase()}</div></div>
+  </button>`;
+
+const T = {};
+
+T.splash = () => `
+  <div class="burst"><img src="img/optimus-stance.jpg" alt=""></div>
+  <div class="logo">FigurePose<small>AI posing assistant</small></div>
+  <p class="tag glass">Turn your figure photos into posing ideas.</p>
+  <p class="small" style="position:absolute;bottom:48px">Tap to start</p>`;
+
+const OB = [
+  {title:"Snap your figure", text:"Take a photo or pick one from your gallery. A plain background works best.", art:()=>`<div class="panel ben ob-panel">${img("figma-hunter","An articulated figure with its spare hands and weapons","50% 40%")}</div>`},
+  {title:"We read its joints", text:"FigurePose finds the head, arms and legs it can see, and marks anything hidden.", art:()=>`<div class="panel ob-panel" style="background:#fff">${shot("rider-pair",{overlay:true,hidden:["rwr"]})}</div>`},
+  {title:"Get poses you can copy", text:"Each idea comes with joint-by-joint steps for the figure in your hands.", art:()=>`<div class="panel ben ob-panel">${img("rider-stance","A figure in a wide fighting stance","50% 30%")}</div>`},
+];
+let ob = 0;
+T.onboarding = () => {
+  const o = OB[ob];
+  return `<div class="scroll nonav" style="display:flex;flex-direction:column">
+    <div class="row between" style="margin-bottom:8px"><span class="ob-step">Step ${ob+1} of 3</span><button class="chip" data-go="home">Skip</button></div>
+    ${o.art()}
+    <div class="ob-text glass"><h2 class="title">${o.title}</h2><p class="lead">${o.text}</p>
+      <div class="dots">${OB.map((_,i)=>`<i class="${i===ob?'on':''}"></i>`).join("")}</div>
+      <button class="btn pow full" id="obNext">${ob<2?"Next":"Start posing"}</button></div>
+  </div>`;
+};
+
+T.home = () => `<div class="scroll">
+  <div class="row between" style="margin-bottom:16px">
+    <div><p class="small">Good evening, collector</p><h2 class="title" style="margin:2px 0 0">Ready to pose?</h2></div>
+    <button class="iconbtn glass" data-go="history" aria-label="History">${ic("book")}</button>
+  </div>
+  <section class="hero panel">
+    <div class="collage">${img("optimus-stance","","50% 30%")}${img("rider-stance","","50% 25%")}${img("claymore-draw","","50% 40%")}</div>
+    <div class="over glass thin">
+      <h3 class="sub" style="margin:0 0 4px">Analyze a figure</h3>
+      <p style="font-size:14.5px;line-height:1.4;color:#E8EAFF">Get 3 to 5 poses with step-by-step joint guidance.</p>
+      <div class="grid2"><button class="btn pow" data-go="upload">${ic("camera")}Camera</button><button class="btn ghost" data-go="preview">${ic("image")}Gallery</button></div>
+    </div>
+  </section>
+  <div class="bubble" style="margin-top:22px">Tip: shoot at the figure's chest height. Low angles hide the hip joints.</div>
+  <div class="row between"><h3 class="sub">Recent analyses</h3><button class="small" data-go="history" style="font-weight:700">See all</button></div>
+  <div class="recent">
+    ${[["rider-pair","Rider figure","5 poses","#fff"],["gundam-boost","Gundam kit","4 poses",""],["levi-ledge","Scout figure","5 poses",""]].map(([p,n,c,bg])=>`
+      <button class="rcard panel" data-go="results" ${bg?`style="background:${bg}"`:""}>${img(p,"","50% 30%")}<div class="cap2 glass thin"><b>${n}</b><span class="small" style="color:#E2E5FF">${c}</span></div></button>`).join("")}
+  </div>
+  <h3 class="sub">Popular this week</h3>
+  <div class="grid">${["lunge","fly","commander","aim"].map(id=>poseCard(byId(id))).join("")}</div>
+</div>${nav("home")}`;
+
+T.upload = () => `
+  <div class="viewfinder">${img("rider-pair","Live camera view of your figure")}</div>
+  <div class="frame"><i></i><i></i><i></i><i></i></div>
+  <div class="cam-top"><button class="iconbtn glass" data-go="home" aria-label="Close camera">${ic("close")}</button><button class="iconbtn glass" aria-label="Flash">${ic("flash")}</button></div>
+  <div class="cam-tip"><div class="bubble">Fit the whole figure inside the corners, feet included.</div></div>
+  <div class="cam-bar glass">
+    <button class="thumb" data-go="preview" aria-label="Choose from gallery">${img("levi-ledge")}</button>
+    <button class="shutter" data-go="preview" aria-label="Take photo"></button>
+    <button class="iconbtn glass" aria-label="Switch camera">${ic("refresh")}</button>
+  </div>`;
+
+T.preview = () => `<div class="scroll nonav">
+  ${back("upload","Check your photo")}
+  <div class="panel photo">${shot("rider-pair",{alt:"Your figure photo"})}<div class="crop"><i></i><i></i><i></i><i></i></div>
+    <div class="tools"><button class="btn ghost">${ic("crop")}Crop</button><button class="btn ghost">${ic("rotate")}Rotate</button></div></div>
+  <div class="glass checks">
+    <div class="check"><span class="tick ok">${ic("check")}</span>Sharp enough to read joints</div>
+    <div class="check"><span class="tick ok">${ic("check")}</span>Whole figure in frame</div>
+    <div class="check"><span class="tick ok">${ic("check")}</span>JPEG, 3024 × 4032, 2.8 MB</div>
+  </div>
+  <button class="btn pow full" data-go="select">Analyze photo</button>
+  <button class="small" data-go="error" style="display:block;margin:14px auto 0;font-weight:700;text-decoration:underline">Preview the unsuitable-photo state</button>
+</div>`;
+
+T.error = () => `<div class="scroll nonav">
+  ${back("preview","Check your photo")}
+  <div class="panel photo" style="height:320px"><div style="height:100%;filter:blur(5px) brightness(.55)">${shot("rider-pair")}</div></div>
+  <div class="warn red glass" style="margin-top:18px">${ic("warn")}<div><b>This photo is too blurry to read the joints.</b><p>We couldn't find clear edges on the arms or legs, so poses would be guesses.</p></div></div>
+  <div class="glass checks" style="margin-top:0">
+    <div class="check"><span class="tick bad">${ic("x")}</span>Blurry: hold the phone still or rest it on something</div>
+    <div class="check"><span class="tick ok">${ic("check")}</span>Whole figure in frame</div>
+    <div class="check"><span class="tick bad">${ic("x")}</span>Dim: add light from the front</div>
+  </div>
+  <button class="btn pow full" data-go="upload">${ic("camera")}Retake photo</button>
+  <button class="btn ghost full" style="margin-top:12px" data-go="preview">${ic("image")}Choose another</button>
+</div>`;
+
+let chosenProfile = "humanoid";
+T.select = () => `<div class="scroll nonav">
+  ${back("preview","Pick your figure")}
+  <div class="panel" style="height:auto">${shot("duo-shelf",{alt:"Photo with two figures",extra:`
+    <div class="bbox" style="left:35%;top:4%;width:35%;height:93%"><span>Figure A, 92%</span></div>
+    <div class="bbox dim" style="left:66%;top:8%;width:28%;height:89%"><span>Figure B</span></div>`})}</div>
+  <p class="lead" style="margin:16px 0 4px">We found 2 figures. Figure A is selected.</p>
+  <h3 class="sub" style="margin-top:14px">Which type is it?</h3>
+  <p class="small" style="margin:-4px 0 12px">Our best guess is Humanoid. Change it if that's wrong.</p>
+  <div class="profiles" role="radiogroup" aria-label="Figure type">
+    ${[["humanoid","Humanoid",86,"panther-front","16 joints, human proportions"],["anime","Anime-style",9,"knight-sword","Larger head, slimmer limbs"],["mecha","Mecha / robot",5,"optimus-stance","Robot or mech, extra joints"]].map(([id,n,c,ph,d])=>`
+    <button class="prof glass" role="radio" aria-checked="${chosenProfile===id}" data-profile="${id}">
+      <div class="panel">${img(ph,"","50% 20%")}</div>
+      <div><b>${n}</b><span class="small">${d}</span><div class="conf"><i style="width:${c}%"></i></div></div>
+      <span class="radio"></span></button>`).join("")}
+  </div>
+  <button class="btn pow full" style="margin-top:20px" data-go="processing">Find poses</button>
+</div>`;
+
+T.processing = () => `<div class="scroll nonav">
+  ${back("select","Analyzing")}
+  <div class="strip">
+    <div class="panel wide"><span class="cap" id="capT">Reading joints</span>${shot("rider-pair",{overlay:true,hidden:["rwr"]})}<div class="scanline"></div></div>
+    <div class="panel ben"><span class="cap">Catalog</span>${img("rider-stance","","50% 30%")}</div>
+    <div class="panel ben"><span class="cap">Catalog</span>${img("skeleton-lunge","","45% 50%")}</div>
+  </div>
+  <div class="glass steps" id="steps"></div>
+  <div class="bar"><i id="barI"></i></div>
+  <div class="row between small"><span>Status: processing</span><span>About 10 s left</span></div>
+  <button class="btn ghost full" style="margin-top:22px" data-go="select">Cancel</button>
+</div>`;
+const STEPS = ["Find the figure","Read visible joints","Match against 1,240 catalog poses","Check joint limits"];
+function renderSteps(n){
+  const el = document.getElementById("steps"); if(!el) return;
+  el.innerHTML = STEPS.map((s,i)=>`<div class="step ${i<n?'done':i===n?'active':'wait'}"><span class="s">${i<n?ic("check"):i+1}</span>${s}${i===1&&i<n?'<em>15 of 16 found</em>':''}</div>`).join("");
+  document.getElementById("barI").style.width = Math.min(100, 12 + n*26) + "%";
+  const cap = document.getElementById("capT"); if (cap) cap.textContent = STEPS[Math.min(n,3)];
+}
+
+T.results = () => `<div class="scroll nonav">
+  ${back("home","Your poses")}
+  <div class="glass summary">
+    <div class="panel">${shot("rider-pair",{overlay:true,hidden:["rwr"]})}</div>
+    <div class="stat"><b>Humanoid figure</b><br>15 of 16 joints found<br>Facing the camera<br><span style="color:var(--yellow)">Left wrist hidden</span></div>
+  </div>
+  <p class="small" style="margin:12px 0 18px">Angles are estimated from a 2D photo. Check stiff joints by hand.</p>
+  ${CATALOG.slice(0,5).map((p,i)=>`
+    <button class="rec panel ben ${p.src==='ai'?'ai':''}" data-detail="${p.id}">${img(p.img,p.name,p.pos)}
+      ${srcBadge(p)}<span class="num">${i+1}</span>
+      <div class="over glass thin">
+        <h4>${p.name}</h4><div class="meta">${p.cat}, ${p.diff.toLowerCase()} difficulty</div>
+        <div class="scores">
+          <div class="score"><b>${p.match}%</b>Match to your figure<div class="meter"><i style="width:${p.match}%"></i></div></div>
+          <div class="score"><b>${p.feas}%</b>Likely to hold<div class="meter f"><i style="width:${p.feas}%;${p.feas<80?'background:var(--yellow)':''}"></i></div></div>
+        </div>
+      </div>
+    </button>`).join("")}
+  <button class="btn ghost full" id="morePoses">${ic("refresh")}Show different poses</button>
+</div>`;
+
+let overlayOn = false;
+T.detail = () => {
+  const p = byId(detailId), fav = favorites.includes(p.id), hasKP = !!KP[p.img];
+  return `<div class="scroll" style="padding-bottom:120px">
+  <div class="panel detail-art">${hasKP ? shot(p.img,{overlay:overlayOn,alt:p.name}) : img(p.img,p.name,p.pos)}
+    ${hasKP?`<button class="toggle glass thin" role="switch" aria-checked="${overlayOn}" id="ovl">Skeleton<span class="sw"></span></button>`:""}</div>
+  <div class="detail-top"><button class="iconbtn glass thin" data-go="results" aria-label="Back">${ic("back")}</button></div>
+  <div class="head-card glass thin">
+    <h2 class="title">${p.name}</h2>
+    <div class="tags"><span class="chip">${p.cat}</span><span class="chip">${p.diff}</span>${srcBadge(p)}</div>
+    <p class="lead">A low, wide fighting stance. The lead fist guards the body, the rear hand rises open and ready.</p>
+  </div>
+  <h3 class="sub">How to pose it</h3>
+  <div class="glass group"><h5>Head and torso</h5>
+    <div class="ins"><span class="n">1</span><div><b>Twist the torso</b><p>Turn the chest toward the raised hand at the ab joint.</p></div><span class="ang">25°</span></div>
+    <div class="ins"><span class="n">2</span><div><b>Tilt the head down</b><p>Chin slightly lowered, eyes on the camera.</p></div><span class="ang">10°</span></div>
+  </div>
+  <div class="glass group"><h5>Arms</h5>
+    <div class="ins"><span class="n">3</span><div><b>Bring the right fist forward</b><p>Bend the elbow so the fist sits at waist height.</p></div><span class="ang">95°</span></div>
+    <div class="ins est"><span class="n">4</span><div><b>Open and raise the left hand</b><p>Estimate: this wrist was hidden in your photo.</p></div><span class="ang">~40°</span></div>
+    <div class="ins"><span class="n">5</span><div><b>Lift the left elbow</b><p>Raise to shoulder height, forearm pointing up.</p></div><span class="ang">80°</span></div>
+  </div>
+  <div class="glass group"><h5>Legs</h5>
+    <div class="ins"><span class="n">6</span><div><b>Spread the legs wide</b><p>Feet about two shoulder-widths apart.</p></div><span class="ang">40°</span></div>
+    <div class="ins"><span class="n">7</span><div><b>Bend the right knee deep</b><p>Shift weight onto it, left leg stays straighter.</p></div><span class="ang">120°</span></div>
+  </div>
+  <div class="warn red glass">${ic("warn")}<div><b>Right knee may not bend this far</b><p>120° is past the usual range for single-hinge knees. Try it gently, or settle for 100°.</p></div></div>
+  <div class="warn note glass">${ic("info")}<div><b>Angles are estimates</b><p>They come from a 2D photo. Twist and depth can't be read exactly.</p></div></div>
+</div>
+<div class="actions glass">
+  <button class="iconbtn" id="favBtn" aria-pressed="${fav}" aria-label="${fav?'Remove from favorites':'Save to favorites'}">${ic("heart",fav)}</button>
+  <button class="btn pow" id="genBtn">${ic("spark")}Make AI visual</button>
+</div>
+<div class="scrim" id="consent">
+  <div class="sheet glass">
+    <h4>Send your photo for an AI visual?</h4>
+    <p class="lead" style="color:#E4E6FF">We'll ask an image service to redraw your figure in this pose.</p>
+    <ul><li>Your photo goes to a third-party image service.</li><li>The result is labeled AI-generated and isn't checked against your figure's joints.</li><li>You can delete it any time from History.</li></ul>
+    <div class="row"><button class="btn ghost" id="consentNo">Not now</button><button class="btn pow" id="consentYes">Make visual</button></div>
+  </div>
+</div>`;
+};
+
+let disc = {cat:"All", prof:"all"};
+T.discover = () => {
+  const list = CATALOG.filter(p => (disc.cat==="All" || p.cat===disc.cat) && (disc.prof==="all" || p.profile===disc.prof));
+  return `<div class="scroll">
+  <h2 class="title">Pose gallery</h2><p class="lead" style="margin-bottom:16px">1,240 poses, each with joint steps.</p>
+  <div class="search glass">${ic("search")}Search poses, like "lunge"</div>
+  <div class="seg glass">${[["humanoid","Humanoid"],["anime","Anime"],["mecha","Mecha"]].map(([id,l])=>`<button data-prof="${id}" aria-pressed="${disc.prof===id}">${l}</button>`).join("")}</div>
+  <div class="chips" style="margin-bottom:12px">${["All","Action","Cinematic","Display","Calm"].map(c=>`<button class="chip ${disc.cat===c?'on':''}" data-cat="${c}">${c}</button>`).join("")}</div>
+  ${list.length ? `<div class="grid">${list.map(poseCard).join("")}</div>` : `<p class="lead" style="text-align:center;padding:30px 0">No ${disc.cat.toLowerCase()} poses for this type yet. Try another category.</p>`}
+</div>${nav("discover")}`;
+};
+
+T.favorites = () => `<div class="scroll">
+  <h2 class="title">Favorites</h2>
+  ${favorites.length ? `<p class="lead" style="margin-bottom:18px">${favorites.length} saved pose${favorites.length>1?'s':''}</p>` + favorites.map(id=>{const p=byId(id);return `
+    <div class="fav glass">
+      <button class="panel" data-detail="${p.id}" aria-label="Open ${p.name}">${img(p.img,"",p.pos)}</button>
+      <button style="text-align:left;flex:1" data-detail="${p.id}"><b>${p.name}</b><div class="meta">${p.cat}, ${p.diff.toLowerCase()}</div><span class="src cat" style="margin-top:8px">${ic("check")}Catalog</span></button>
+      <button class="iconbtn" data-unfav="${p.id}" aria-label="Remove ${p.name}" style="color:var(--red)">${ic("heart",true)}</button>
+    </div>`}).join("")
+  : `<div class="empty"><div class="panel ben">${img("trooper-walk","","72% 50%")}</div>
+     <h3 class="sub" style="margin-top:0">No saved poses yet</h3><p class="lead" style="margin-bottom:20px">Tap the heart on any pose to keep it here.</p>
+     <button class="btn pow" data-go="discover">Browse poses</button></div>`}
+</div>${nav("favorites")}`;
+
+T.history = () => `<div class="scroll nonav">
+  ${back("home","History")}
+  ${[["rider-pair","Rider figure","Today, 20:14","done","Completed, 5 poses"],
+     ["gundam-boost","Gundam kit","Today, 19:02","proc","Processing"],
+     ["levi-ledge","Scout figure","Yesterday","done","Completed, 4 poses"],
+     ["panther-front","Shelf photo","8 Nov","fail","Failed, legs cut off"]].map(([p,n,d,s,l])=>`
+    <div class="fav glass">
+      <div class="panel" ${p==='rider-pair'?'style="background:#fff"':''}>${img(p,"","50% 25%")}</div>
+      <button style="text-align:left;flex:1" data-go="${s==='done'?'results':s==='proc'?'processing':'error'}"><b>${n}</b><div class="meta">${d}</div><span class="status-chip st-${s}">${l}</span></button>
+      <button class="iconbtn" aria-label="Delete analysis and photo" data-toast="Analysis and photo deleted">${ic("trash")}</button>
+    </div>`).join("")}
+  <p class="small" style="text-align:center;margin-top:10px">Original photos are deleted after 30 days.</p>
+</div>`;
+
+let aiConsent = true, credits = [];
+T.profile = () => `<div class="scroll">
+  <h2 class="title">Profile</h2>
+  <div class="glass guest" style="margin-top:12px">
+    <div class="row" style="gap:14px"><div class="avatar">${img("figma-hunter","","50% 30%")}</div>
+      <div><b style="font-size:17px">Guest collector</b><p class="small" style="margin-top:3px">You can analyze figures without an account.</p></div></div>
+    <p class="lead" style="margin:14px 0">Sign in to keep favorites and history across devices.</p>
+    <div class="row"><button class="btn pow" style="flex:1">Create account</button><button class="btn ghost" style="flex:1">Sign in</button></div>
+  </div>
+  <h3 class="sub">Privacy</h3>
+  <div class="glass list">
+    <button class="item" id="aiSw" role="switch" aria-checked="${aiConsent}">${ic("spark")}<div>Ask before AI visuals<small>Photos go to an image service only after you agree</small></div><span class="end"><span class="sw"></span></span></button>
+    <div class="item">${ic("shield")}<div>Keep original photos<small>Then they're deleted automatically</small></div><span class="end">30 days ${ic("chevron")}</span></div>
+    <button class="item danger" data-toast="All photos and analyses deleted">${ic("trash")}<div>Delete my photos and analyses</div></button>
+  </div>
+  <h3 class="sub">App</h3>
+  <div class="glass list">
+    <button class="item" data-go="history">${ic("book")}<div>Analysis history</div><span class="end">${ic("chevron")}</span></button>
+    <div class="item">${ic("bell")}<div>Notify me when analysis finishes</div><span class="end">On</span></div>
+    <div class="item">${ic("info")}<div>About FigurePose</div><span class="end">v0.1 ${ic("chevron")}</span></div>
+  </div>
+  <h3 class="sub">Photo credits</h3>
+  <div class="glass list credits" style="padding:10px 16px;font-size:12.5px;line-height:1.55;color:var(--mute)">
+    ${credits.length ? credits.map(c=>`<div>“${c.title}” by ${c.creator}, <a href="${c.source}" target="_blank" rel="noopener">${c.license}</a></div>`).join("") : "Stand-in photos from Flickr via Openverse, CC BY, CC BY-SA, CC0 and public domain. See img/credits.json."}
+  </div>
+</div>${nav("profile")}`;
+
+/* ---------- Router ---------- */
+const root = document.getElementById("screens");
+let current = "splash", timers = [];
+function show(id){
+  timers.forEach(clearTimeout); timers = [];
+  current = id;
+  root.innerHTML = `<section class="screen on" id="${id}" aria-label="${SCREENS.find(s=>s.id===id).label}">${T[id]()}</section>`;
+  document.querySelectorAll("#index button").forEach(b => b.setAttribute("aria-current", b.dataset.go===id));
+  if (id === "processing"){
+    let n = 0; renderSteps(0);
+    const tick = () => { n++; renderSteps(n); if (n < 4) timers.push(setTimeout(tick, 1100)); else timers.push(setTimeout(()=>show("results"), 900)); };
+    timers.push(setTimeout(tick, 1100));
+  }
+  try { localStorage.setItem("fp-screen", id); } catch(e) {}
+}
+function rerender(){ const s = root.querySelector(".scroll"), y = s ? s.scrollTop : 0; show(current); const s2 = root.querySelector(".scroll"); if (s2) s2.scrollTop = y; }
+function toast(t){ const el = document.getElementById("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(()=>el.classList.remove("on"), 1800); }
+
+document.getElementById("index").innerHTML = SCREENS.map(s=>`<li><button data-go="${s.id}">${s.label}</button></li>`).join("");
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("button, #splash"); if (!t) return;
+  if (t.id === "splash"){ show("onboarding"); return; }
+  if (t.dataset.go){ if (t.dataset.go==="onboarding") ob = 0; show(t.dataset.go); return; }
+  if (t.dataset.detail){ detailId = t.dataset.detail; overlayOn = false; show("detail"); return; }
+  if (t.dataset.profile){ chosenProfile = t.dataset.profile; rerender(); return; }
+  if (t.dataset.cat){ disc.cat = t.dataset.cat; rerender(); return; }
+  if (t.dataset.prof){ disc.prof = disc.prof===t.dataset.prof ? "all" : t.dataset.prof; rerender(); return; }
+  if (t.dataset.unfav){ favorites = favorites.filter(f=>f!==t.dataset.unfav); rerender(); toast("Removed from favorites"); return; }
+  if (t.dataset.toast){ toast(t.dataset.toast); return; }
+  switch (t.id){
+    case "obNext": if (ob < 2){ ob++; rerender(); } else show("home"); break;
+    case "ovl": overlayOn = !overlayOn; rerender(); break;
+    case "favBtn": {
+      const on = favorites.includes(detailId);
+      favorites = on ? favorites.filter(f=>f!==detailId) : [...favorites, detailId];
+      rerender(); toast(on ? "Removed from favorites" : "Saved to favorites"); break; }
+    case "genBtn": document.getElementById("consent").classList.add("on"); document.getElementById("consentYes").focus(); break;
+    case "consentNo": document.getElementById("consent").classList.remove("on"); break;
+    case "consentYes": document.getElementById("consent").classList.remove("on"); toast("Making AI visual, about 20 s"); break;
+    case "morePoses": toast("Finding different poses"); break;
+    case "aiSw": aiConsent = !aiConsent; rerender(); break;
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape"){ const c = document.getElementById("consent"); if (c) c.classList.remove("on"); }
+  if ((e.key === "Enter" || e.key === " ") && current === "splash"){ show("onboarding"); }
+});
+
+fetch("img/credits.json").then(r => r.json()).then(c => { credits = c; if (current === "profile") rerender(); }).catch(() => {});
+
+let start = "splash";
+try { const s = localStorage.getItem("fp-screen"); if (s && T[s]) start = s; } catch(e) {}
+show(start);
+</script>
+</body>
+</html>
