@@ -1,0 +1,28 @@
+{
+  "profile": "anime_v1",
+  "name": "Anime-style",
+  "category": "anime",
+  "version": 1,
+  "angle_convention": "Joint angle is the interior angle between the two connected segments, in degrees, measured in the 2D image plane. 180 means fully straight.",
+  "keypoints": [
+    "head", "neck", "chest", "waist",
+    "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist",
+    "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"
+  ],
+  "connections": [
+    ["head", "neck"], ["neck", "chest"], ["chest", "waist"],
+    ["neck", "left_shoulder"], ["neck", "right_shoulder"],
+    ["left_shoulder", "left_elbow"], ["left_elbow", "left_wrist"],
+    ["right_shoulder", "right_elbow"], ["right_elbow", "right_wrist"],
+    ["waist", "left_hip"], ["waist", "right_hip"], ["left_hip", "right_hip"],
+    ["left_hip", "left_knee"], ["left_knee", "left_ankle"],
+    ["right_hip", "right_knee"], ["right_knee", "right_ankle"]
+  ],
+  "notes": "Larger head and slimmer limbs than humanoid_v1. Many scale figures (figma, S.H.Figuarts-style) use pinned double joints at elbows and knees.",
+  "joints": {
+    "left_elbow":  {"segments": ["left_shoulder", "left_elbow", "left_wrist"],  "min": 20, "max": 180, "source": "estimated"},
+    "right_elbow": {"segments": ["right_shoulder", "right_elbow", "right_wrist"], "min": 20, "max": 180, "source": "estimated"},
+    "left_knee":   {"segments": ["left_hip", "left_knee", "left_ankle"],       "min": 25, "max": 180, "source": "estimated"},
+    "right_knee":  {"segments": ["right_hip", "right_knee", "right_ankle"],    "min": 25, "max": 180, "source": "estimated"}
+  }
+}
