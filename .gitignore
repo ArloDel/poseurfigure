@@ -1,0 +1,14 @@
+.env
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Python
+ai-service/.venv/
+__pycache__/
+.pytest_cache/
+
+# Local tool state
+.taste-skill/
