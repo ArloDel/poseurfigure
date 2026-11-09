@@ -1,0 +1,160 @@
+# FigurePose AI
+
+Mobile posing assistant for action-figure collectors: snap a figure, get 3 to 5 pose ideas with joint-by-joint steps.
+Product spec: [docs/PRD.md](docs/PRD.md). UI prototype: [design/ui-prototype.html](design/ui-prototype.html).
+
+## Repository
+
+```text
+figurepose/
+├── mobile/          Flutter app (Android, iOS, web, Windows)
+├── backend/         Laravel 13 REST API + queue worker
+├── ai-service/      Python FastAPI: image checks now, detection and keypoints later
+├── shared/          Skeleton profiles read by both backend and AI service
+├── infrastructure/  Postgres init SQL (nginx/ and docker/ reserved for later)
+├── design/          Clickable UI prototype and stand-in photos (CC-licensed)
+├── docs/            PRD
+└── docker-compose.yml
+```
+
+## Requirements
+
+| Tool | Version used | Needed for |
+|---|---|---|
+| Docker Desktop | Compose v2+ | API, worker, AI service, Postgres, Redis, SeaweedFS (S3) |
+| Flutter | 3.47 stable (Dart 3.13) | Mobile app |
+| PHP + Composer | PHP 8.4, Composer 2 | Running backend tests outside Docker (optional) |
+| Python | 3.12+ | Running AI tests outside Docker (optional) |
+
+For Android builds you also need Android Studio (SDK + emulator). iOS builds need a Mac with Xcode.
+
+## Run the stack
+
+```bash
+cp .env.example .env        # then change the passwords
+docker compose up --build
+```
+
+On first start the API container runs migrations, seeds the three figure profiles and starter poses, and creates the private image bucket.
+
+| Service | URL |
+|---|---|
+| API | http://localhost:8000/api/v1/health |
+| AI service | http://localhost:8001/health (docs at /docs) |
+| Object storage (S3 API) | http://localhost:8333, keys = `S3_ACCESS_KEY` / `S3_SECRET_KEY` |
+| Postgres | localhost:5433, database `figurepose` |
+
+### Try an upload
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/analyses \
+  -H "Accept: application/json" \
+  -H "X-Guest-Key: 3f1c2b9a-6a2e-4c1d-9d0e-2b7f4a1c8e55" \
+  -F "image=@design/img/optimus-stance.jpg" \
+  -F "analysis_mode=automatic"
+```
+
+Then poll `GET /api/v1/analyses/{analysis_id}` with the same `X-Guest-Key` until `status` is `completed` or `failed`.
+
+## Run the mobile app
+
+```bash
+cd mobile
+flutter pub get
+flutter run -d chrome
+```
+
+The app talks to `http://localhost:8000/api/v1` by default. On an Android emulator, point it at the host machine:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+```
+
+The browser build needs CORS on the API, which Laravel allows for `api/*` by default.
+
+## Tests
+
+```bash
+cd backend && php artisan test
+```
+
+```bash
+cd ai-service && python -m pytest
+```
+
+```bash
+cd mobile && flutter analyze && flutter test
+```
+
+Or run the backend and AI tests inside the containers (the backend tests use an in-memory SQLite database, not the dev Postgres):
+
+```bash
+docker compose exec -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: api php artisan test
+```
+
+```bash
+docker compose exec ai python -m pytest
+```
+
+## API (Sprint 1)
+
+All endpoints are under `/api/v1` and return `{ "success": true, "data": ... }`.
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| GET | `/health` | API, database and AI service readiness |
+| GET | `/figures/profiles` | `humanoid_v1`, `anime_v1`, `mecha_v1` |
+| GET | `/poses` | Catalog. Filters: `profile`, `category`, `q` |
+| GET | `/poses/{id}` | Pose with structured instructions |
+| POST | `/analyses` | Multipart upload. Returns `202` with `analysis_id` at once |
+| GET | `/analyses/{analysis_id}` | Status, quality report, errors. Owner only |
+
+**Who owns an analysis.** Signed-in users send a Sanctum bearer token. Guests send `X-Guest-Key`: a UUID the app creates once and keeps in secure storage. The server stores only an HMAC of it. Anyone else gets `404`.
+
+**Lifecycle.** `pending → processing → completed`, or `failed`. An unsuitable photo (blurry, dark, too small) fails at once with a reason. An AI-service outage is retried 3 times, then fails with `retryable: true`.
+
+## Environment variables
+
+Root `.env` (Docker Compose):
+
+| Variable | Purpose |
+|---|---|
+| `DB_PASSWORD` | Postgres password |
+| `S3_ACCESS_KEY` / `S3_SECRET_KEY` | Object storage credentials, also used by Laravel's S3 disk |
+
+Backend (`backend/.env`, overridden by Compose inside containers):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AI_SERVICE_URL` | `http://localhost:8001` | FastAPI base URL |
+| `AI_SERVICE_TIMEOUT` | `30` | Seconds per AI call |
+| `FIGUREPOSE_IMAGE_DISK` | `s3` | Disk for user photos (private) |
+| `UPLOAD_MAX_KB` | `10240` | Max photo size |
+| `UPLOAD_MIN_DIMENSION` / `UPLOAD_MAX_DIMENSION` | `480` / `8000` | Pixel limits per side |
+| `ANALYSIS_MAX_ATTEMPTS` | `3` | Retries when the AI service fails |
+| `SKELETON_PROFILES_PATH` | `../shared/skeleton_profiles` | Profile JSON used by the seeder |
+
+AI service (prefix `AI_`): `AI_SKELETON_PROFILES_PATH`, `AI_MIN_SHARPNESS` (60), `AI_MIN_BRIGHTNESS` (45), `AI_MAX_BRIGHTNESS` (235), `AI_MIN_DIMENSION` (480), `AI_MAX_UPLOAD_MB` (12).
+
+Mobile (`--dart-define`): `API_BASE_URL`.
+
+## Sprint 1 status
+
+- [x] Repository and project structure
+- [x] Laravel + PostgreSQL (pgvector image, extension enabled)
+- [x] Migrations for all PRD tables, seeders for 3 profiles and 7 starter poses
+- [x] FastAPI with `/health`, `/v1/profiles` and image quality checks
+- [x] Flutter app with theme, 4-tab navigation, Home screen, upload and status polling
+- [x] Docker Compose for local development
+- [x] Photo-upload endpoint with async queue processing
+- [x] README with setup and environment variables
+
+Not yet built (later sprints): sign-up and login, figure detection and keypoints, pose matching, favorites, history, AI image generation.
+
+## Production notes
+
+The Compose file is for development: `php artisan serve`, source mounted into containers, no TLS. Before deploying: add nginx + PHP-FPM, pin every image by digest, use real secret management, put Postgres/Redis/storage on a private network, add backups and monitoring. Object storage is a single-node SeaweedFS (`chrislusf/seaweedfs:4.53`) because MinIO no longer publishes container images; in production use a managed S3 bucket or a replicated SeaweedFS setup. The Laravel side only speaks S3, so switching needs env changes only.
+
+## Credits
+
+Stand-in photos in `design/img` and `mobile/assets/images` are CC-licensed or public-domain photos from Flickr, found via Openverse. Authors and licenses are in `design/img/credits.json`. Fonts: Bowlby One and Archivo, SIL Open Font License (`mobile/assets/fonts`).
