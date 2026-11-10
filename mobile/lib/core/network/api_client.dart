@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/env.dart';
 import '../storage/guest_key.dart';
+import '../storage/token_store.dart';
 
 /// An error the UI can show as-is.
 class ApiException implements Exception {
@@ -41,9 +42,22 @@ final dioProvider = Provider<Dio>((ref) {
     receiveTimeout: const Duration(seconds: 30),
     headers: {'Accept': 'application/json'},
   ));
-  dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) async {
-    options.headers['X-Guest-Key'] = await ref.read(guestKeyProvider.future);
-    handler.next(options);
-  }));
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      // Always send the guest key: on sign-in it lets the server move guest analyses to the account.
+      options.headers['X-Guest-Key'] = await ref.read(guestKeyProvider.future);
+      final token = await ref.read(tokenStoreProvider).read();
+      if (token != null) options.headers['Authorization'] = 'Bearer $token';
+      handler.next(options);
+    },
+    onError: (error, handler) async {
+      // The token was revoked or expired: forget it and fall back to guest mode.
+      if (error.response?.statusCode == 401 && error.requestOptions.headers.containsKey('Authorization')) {
+        await ref.read(tokenStoreProvider).clear();
+        ref.read(tokenRevisionProvider.notifier).bump();
+      }
+      handler.next(error);
+    },
+  ));
   return dio;
 });
