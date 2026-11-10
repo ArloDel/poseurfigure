@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Enums\AnalysisMode;
 use App\Enums\AnalysisStatus;
 use App\Models\Analysis;
+use App\Models\FigureProfile;
 use App\Services\AIService;
 use App\Services\StorageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -44,10 +46,11 @@ class ProcessFigureAnalysis implements ShouldQueue
             'started_at' => $analysis->started_at ?? now(),
         ]);
 
+        // Only a user-chosen type is sent; in automatic mode the AI service classifies the figure itself.
         $result = $ai->analyze(
             $storage->read($analysis->image_disk, $analysis->image_path),
             basename($analysis->image_path),
-            $analysis->profile?->slug,
+            $analysis->analysis_mode === AnalysisMode::Manual ? $analysis->profile?->slug : null,
             $analysis->public_id,
         );
 
@@ -68,10 +71,24 @@ class ProcessFigureAnalysis implements ShouldQueue
             return;
         }
 
+        $profileSlug = $result['classification']['profile'] ?? null;
+
         $analysis->update([
             'status' => AnalysisStatus::Completed,
             'quality' => $quality,
-            'pose_data' => ['stage' => $result['stage'] ?? null, 'pose' => $result['pose'] ?? null],
+            'pose_data' => [
+                'stage' => $result['stage'] ?? null,
+                'figures' => $result['figures'] ?? [],
+                'selected_figure' => $result['selected_figure'] ?? null,
+                'classification' => $result['classification'] ?? null,
+                'pose' => $result['pose'] ?? null,
+                'models' => $result['models'] ?? [],
+                'timings_ms' => $result['timings_ms'] ?? [],
+            ],
+            // Remember the type used, so history and pose matching know the skeleton.
+            'figure_profile_id' => $profileSlug
+                ? (FigureProfile::where('slug', $profileSlug)->value('id') ?? $analysis->figure_profile_id)
+                : $analysis->figure_profile_id,
             'ai_model_version' => $result['model_version'] ?? null,
             'completed_at' => now(),
         ]);
