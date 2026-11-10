@@ -6,6 +6,11 @@ abstract final class AppTheme {
   static const display = 'BowlbyOne';
   static const body = 'Archivo';
 
+  static OutlineInputBorder _inputBorder(Color color) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: color, width: 2.5),
+      );
+
   static ThemeData dark() {
     const scheme = ColorScheme.dark(
       primary: AppColors.yellow,
@@ -38,6 +43,20 @@ abstract final class AppTheme {
             labelLarge: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
           )
           .apply(bodyColor: AppColors.chalk, displayColor: AppColors.chalk),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: .12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        labelStyle: const TextStyle(color: AppColors.mute),
+        floatingLabelStyle: const TextStyle(color: AppColors.yellow, fontWeight: FontWeight.w700),
+        hintStyle: const TextStyle(color: AppColors.mute),
+        errorStyle: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w600),
+        border: _inputBorder(AppColors.line),
+        enabledBorder: _inputBorder(AppColors.line),
+        focusedBorder: _inputBorder(AppColors.yellow),
+        errorBorder: _inputBorder(AppColors.red),
+        focusedErrorBorder: _inputBorder(AppColors.red),
+      ),
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.white,
