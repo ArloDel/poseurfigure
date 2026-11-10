@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AnalysisController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FigureController;
 use App\Http\Controllers\Api\FigureProfileController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\PoseController;
@@ -21,6 +22,11 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::get('/figures/profiles', [FigureProfileController::class, 'index']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/figures', [FigureController::class, 'index']);
+        Route::post('/figures', [FigureController::class, 'store']);
+    });
 
     Route::get('/poses', [PoseController::class, 'index']);
     Route::get('/poses/{pose}', [PoseController::class, 'show'])->whereNumber('pose');
