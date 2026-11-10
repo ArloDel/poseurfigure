@@ -22,6 +22,9 @@ class PoseResource extends JsonResource
             // Catalog references are curated; AI-generated images come from a separate resource (REC-10).
             'source' => 'catalog',
             'reference_image' => $this->reference_image,
+            // Catalog photos are public files under public/catalog, so the app can load them directly.
+            'image_url' => $this->reference_image ? url($this->reference_image) : null,
+            'image_credit' => $this->reference_credit,
             'description' => $this->when($detail, $this->description),
             'instructions' => $this->when($detail, $this->instructions),
             'joint_positions' => $this->when($detail, $this->joint_positions),

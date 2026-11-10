@@ -42,6 +42,8 @@ class CatalogApiTest extends TestCase
         $this->getJson("/api/v1/poses/{$pose->id}")
             ->assertOk()
             ->assertJsonPath('data.source', 'catalog')
+            ->assertJsonPath('data.image_url', url('catalog/rider-ready-stance.jpg'))
+            ->assertJsonPath('data.image_credit.license', 'CC BY 2.0')
             ->assertJsonStructure(['data' => ['instructions' => [['step', 'body_part', 'movement', 'target_angle', 'priority']]]]);
     }
 }
