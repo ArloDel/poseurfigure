@@ -61,6 +61,9 @@ abstract final class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.white,
         contentTextStyle: TextStyle(color: AppColors.line, fontWeight: FontWeight.w800, fontFamily: body),
+        actionTextColor: AppColors.blue,
+        // Float above the glass bottom bars (tab bar, Save bar) instead of covering them.
+        insetPadding: EdgeInsets.fromLTRB(16, 0, 16, 108),
       ),
     );
   }
