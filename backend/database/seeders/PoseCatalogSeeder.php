@@ -15,6 +15,8 @@ class PoseCatalogSeeder extends Seeder
     public function run(): void
     {
         $profiles = FigureProfile::pluck('id', 'category');
+        $creditsFile = public_path('catalog/credits.json');
+        $credits = is_file($creditsFile) ? json_decode((string) file_get_contents($creditsFile), true) : [];
 
         foreach ($this->poses() as $pose) {
             PoseCatalog::updateOrCreate(
@@ -29,6 +31,7 @@ class PoseCatalogSeeder extends Seeder
                     'constraints' => $pose['constraints'] ?? null,
                     'instructions' => $pose['instructions'],
                     'reference_image' => "catalog/{$pose['slug']}.jpg",
+                    'reference_credit' => $credits[$pose['slug']] ?? null,
                     'is_published' => true,
                 ],
             );
