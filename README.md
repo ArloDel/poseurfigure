@@ -37,6 +37,12 @@ docker compose up --build
 
 On first start the API container runs migrations, seeds the three figure profiles and starter poses, and creates the private image bucket.
 
+`backend/vendor` lives in the `backend_vendor` Docker volume, not the bind mount: reading it through a Windows bind mount made every request take 8+ seconds. After changing `composer.json`, rebuild and recreate that volume:
+
+```bash
+docker compose down && docker volume rm figurepose_backend_vendor && docker compose up --build
+```
+
 | Service | URL |
 |---|---|
 | API | http://localhost:8000/api/v1/health |
@@ -70,7 +76,21 @@ The app talks to `http://localhost:8000/api/v1` by default. On an Android emulat
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
 ```
 
-The browser build needs CORS on the API, which Laravel allows for `api/*` by default.
+The browser build needs CORS: Laravel adds it for `api/*`, and the dev server's `backend/docker/router.php` adds it for catalog photos under `/catalog`.
+
+To serve a release web build instead of `flutter run`:
+
+```bash
+cd mobile && flutter build web --dart-define=API_BASE_URL=http://localhost:8000/api/v1
+```
+
+```bash
+python -m http.server 5180 --directory mobile/build/web
+```
+
+Then open http://localhost:5180.
+
+**Screens.** Home (upload, server status), Discover (pose gallery with type, category and search filters), pose detail (steps by body region, joint warnings, save), Favorites, Profile (guest or account), History (with delete), sign-in / create account, and the analysis status screen. Guests can analyze and browse; favorites need an account.
 
 ## Tests
 
@@ -172,11 +192,21 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] Favorites: save, list, remove
 - [x] Analysis history, and delete with photo cleanup
 
-Not yet built (later sprints): these screens in the mobile app, figure detection and keypoints, pose matching and recommendations, AI image generation, Google sign-in.
+## Sprint 3 status
+
+- [x] Catalog poses carry a photo URL and credit; photos are served from `backend/public/catalog`
+- [x] Mobile sign-in and create account, token in secure storage, guest mode by default
+- [x] Pose gallery with type, category and search filters
+- [x] Pose detail with steps grouped by body region, joint warnings and photo credit
+- [x] Favorites, Profile and History screens backed by the Sprint 2 API
+- [x] 20 widget and unit tests with fake repositories
+- [x] Dev API responds in under 0.5 s (OPcache, vendor in a Docker volume)
+
+Not yet built (later sprints): figure detection and keypoints, pose matching and recommendations, AI image generation, Google sign-in, crop and rotate before upload.
 
 ## Production notes
 
-The Compose file is for development: `php artisan serve`, source mounted into containers, no TLS. Before deploying: add nginx + PHP-FPM, pin every image by digest, use real secret management, put Postgres/Redis/storage on a private network, add backups and monitoring. Object storage is a single-node SeaweedFS (`chrislusf/seaweedfs:4.53`) because MinIO no longer publishes container images; in production use a managed S3 bucket or a replicated SeaweedFS setup. The Laravel side only speaks S3, so switching needs env changes only.
+The Compose file is for development: PHP's built-in server, source mounted into containers, no TLS. Before deploying: serve `/catalog` from nginx or a CDN with an `Access-Control-Allow-Origin` header, add nginx + PHP-FPM, pin every image by digest, use real secret management, put Postgres/Redis/storage on a private network, add backups and monitoring. Object storage is a single-node SeaweedFS (`chrislusf/seaweedfs:4.53`) because MinIO no longer publishes container images; in production use a managed S3 bucket or a replicated SeaweedFS setup. The Laravel side only speaks S3, so switching needs env changes only.
 
 ## Credits
 
