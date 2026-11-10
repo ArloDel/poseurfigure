@@ -35,6 +35,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/var/www
+      # vendor/ lives in a volume: reading it through the Windows bind mount made every request take 8+ s.
+      # After changing composer.json: docker compose build && docker compose down && docker volume rm figurepose_backend_vendor
+      - backend_vendor:/var/www/vendor
       - ./shared:/shared:ro
     depends_on:
       postgres: { condition: service_healthy }
@@ -49,6 +52,7 @@ services:
     environment: *backend-env
     volumes:
       - ./backend:/var/www
+      - backend_vendor:/var/www/vendor
       - ./shared:/shared:ro
     depends_on:
       api: { condition: service_started }
@@ -118,3 +122,4 @@ services:
 volumes:
   postgres_data:
   storage_data:
+  backend_vendor:
