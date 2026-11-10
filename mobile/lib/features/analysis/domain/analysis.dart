@@ -1,3 +1,7 @@
+import 'pose_result.dart';
+
+export 'pose_result.dart';
+
 enum AnalysisStatus {
   pending,
   processing,
@@ -30,6 +34,11 @@ class Analysis {
     this.createdAt,
     this.profile,
     this.recommendationCount = 0,
+    this.imageWidth,
+    this.imageHeight,
+    this.typeGuess,
+    this.pose,
+    this.figureCount = 0,
   });
 
   final String id;
@@ -43,6 +52,11 @@ class Analysis {
   final DateTime? createdAt;
   final String? profile;
   final int recommendationCount;
+  final int? imageWidth;
+  final int? imageHeight;
+  final FigureTypeGuess? typeGuess;
+  final PoseResult? pose;
+  final int figureCount;
 
   factory Analysis.fromJson(Map<String, dynamic> json) {
     final error = json['error'] as Map<String, dynamic>?;
@@ -58,6 +72,11 @@ class Analysis {
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
       profile: json['profile'] as String?,
       recommendationCount: (json['recommendations'] as List?)?.length ?? 0,
+      imageWidth: (json['image'] as Map?)?['width'] as int?,
+      imageHeight: (json['image'] as Map?)?['height'] as int?,
+      typeGuess: json['classification'] is Map ? FigureTypeGuess.fromJson(json['classification'] as Map<String, dynamic>) : null,
+      pose: json['pose'] is Map ? PoseResult.fromJson(json['pose'] as Map<String, dynamic>) : null,
+      figureCount: (json['figures'] as List?)?.length ?? 0,
       issues: [
         for (final i in (quality?['issues'] as List? ?? const []))
           QualityIssue((i as Map)['code'] as String, i['message'] as String),
