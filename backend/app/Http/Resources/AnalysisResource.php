@@ -26,7 +26,11 @@ class AnalysisResource extends JsonResource
             ],
             'poll_after_seconds' => $this->when(! $final, config('figurepose.analysis.poll_after_seconds')),
             'quality' => $this->when($final, $this->quality),
-            'pose' => $this->when($this->status === AnalysisStatus::Completed, $this->pose_data),
+            // Detection and pose results (PRD 8.3). Coordinates are normalized to the uploaded photo.
+            'figures' => $this->when($this->status === AnalysisStatus::Completed, fn () => $this->pose_data['figures'] ?? []),
+            'selected_figure' => $this->when($this->status === AnalysisStatus::Completed, fn () => $this->pose_data['selected_figure'] ?? null),
+            'classification' => $this->when($this->status === AnalysisStatus::Completed, fn () => $this->pose_data['classification'] ?? null),
+            'pose' => $this->when($this->status === AnalysisStatus::Completed, fn () => $this->pose_data['pose'] ?? null),
             'recommendations' => $this->when(
                 $this->status === AnalysisStatus::Completed,
                 fn () => $this->recommendations->map(fn ($r) => [
