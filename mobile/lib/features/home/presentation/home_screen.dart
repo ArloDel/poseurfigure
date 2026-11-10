@@ -25,8 +25,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     setState(() => _uploading = true);
     try {
+      final bytes = await photo.readAsBytes();
       final id = await ref.read(analysisRepositoryProvider).start(photo);
-      if (mounted) context.go('/analysis/$id');
+      // The local copy lets the result screen draw the skeleton on the photo.
+      if (mounted) context.go('/analysis/$id', extra: bytes);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     } finally {

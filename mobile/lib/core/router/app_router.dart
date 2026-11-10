@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,7 +39,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/analysis/:id',
-        builder: (_, state) => AnalysisScreen(analysisId: state.pathParameters['id']!),
+        builder: (_, state) => AnalysisScreen(
+          analysisId: state.pathParameters['id']!,
+          photo: state.extra is Uint8List ? state.extra as Uint8List : null,
+        ),
       ),
     ],
   );
