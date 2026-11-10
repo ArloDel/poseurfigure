@@ -16,6 +16,16 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Slows down password guessing: per email + IP, and per IP overall.
+        RateLimiter::for('auth', function (Request $request) {
+            $email = mb_strtolower((string) $request->input('email'));
+
+            return [
+                Limit::perMinute(5)->by('auth:'.$email.'|'.$request->ip()),
+                Limit::perMinute(20)->by('auth-ip:'.$request->ip()),
+            ];
+        });
+
         // Uploads trigger AI work, so they are limited per user, guest device and IP.
         RateLimiter::for('analyses', function (Request $request) {
             $key = $request->user('sanctum')?->id ?? $request->header('X-Guest-Key') ?? $request->ip();
