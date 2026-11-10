@@ -96,20 +96,34 @@ docker compose exec -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: api php arti
 docker compose exec ai python -m pytest
 ```
 
-## API (Sprint 1)
+## API
 
 All endpoints are under `/api/v1` and return `{ "success": true, "data": ... }`.
+Access: **open** needs nothing, **owner** needs a bearer token or `X-Guest-Key`, **account** needs a bearer token.
 
-| Method | Endpoint | Notes |
-|---|---|---|
-| GET | `/health` | API, database and AI service readiness |
-| GET | `/figures/profiles` | `humanoid_v1`, `anime_v1`, `mecha_v1` |
-| GET | `/poses` | Catalog. Filters: `profile`, `category`, `q` |
-| GET | `/poses/{id}` | Pose with structured instructions |
-| POST | `/analyses` | Multipart upload. Returns `202` with `analysis_id` at once |
-| GET | `/analyses/{analysis_id}` | Status, quality report, errors. Owner only |
+| Method | Endpoint | Access | Notes |
+|---|---|---|---|
+| GET | `/health` | open | API, database and AI service readiness |
+| POST | `/auth/register` | open | `name`, `email`, `password` (8+ chars). Returns a token |
+| POST | `/auth/login` | open | `email`, `password`. Returns a token. 5 tries per minute |
+| POST | `/auth/logout` | account | Revokes the current token |
+| GET | `/auth/me` | account | Current user |
+| GET | `/figures/profiles` | open | `humanoid_v1`, `anime_v1`, `mecha_v1` |
+| GET | `/figures` | account | The user's figures |
+| POST | `/figures` | account | `name`, `figure_profile_id`, optional `brand`, `articulation_config` |
+| GET | `/poses` | open | Catalog. Filters: `profile`, `category`, `q` |
+| GET | `/poses/{id}` | open | Pose with structured instructions |
+| POST | `/analyses` | owner | Multipart upload. Returns `202` with `analysis_id` at once |
+| GET | `/analyses` | owner | History, newest first |
+| GET | `/analyses/{analysis_id}` | owner | Status, quality report, errors |
+| DELETE | `/analyses/{analysis_id}` | owner | Deletes the analysis and the stored photo |
+| GET | `/favorites` | account | Saved catalog poses |
+| POST | `/favorites` | account | `pose_id`. Saving twice keeps one favorite |
+| DELETE | `/favorites/{id}` | account | Remove a favorite |
 
-**Who owns an analysis.** Signed-in users send a Sanctum bearer token. Guests send `X-Guest-Key`: a UUID the app creates once and keeps in secure storage. The server stores only an HMAC of it. Anyone else gets `404`.
+**Tokens.** Register and login return `data.token`. Send it as `Authorization: Bearer <token>`.
+
+**Who owns an analysis.** Signed-in users send a Sanctum bearer token. Guests send `X-Guest-Key`: a UUID the app creates once and keeps in secure storage. The server stores only an HMAC of it. Anyone else gets `404`. If `X-Guest-Key` is sent with register or login, analyses made as a guest on that device move to the account.
 
 **Lifecycle.** `pending → processing → completed`, or `failed`. An unsuitable photo (blurry, dark, too small) fails at once with a reason. An AI-service outage is retried 3 times, then fails with `retryable: true`.
 
@@ -149,7 +163,16 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] Photo-upload endpoint with async queue processing
 - [x] README with setup and environment variables
 
-Not yet built (later sprints): sign-up and login, figure detection and keypoints, pose matching, favorites, history, AI image generation.
+## Sprint 2 status
+
+- [x] Register, login, logout and current-user endpoints (Sanctum tokens)
+- [x] Login and register rate limiting
+- [x] Guest analyses move to the account on sign-in
+- [x] Figures: list and add, with optional joint limits
+- [x] Favorites: save, list, remove
+- [x] Analysis history, and delete with photo cleanup
+
+Not yet built (later sprints): these screens in the mobile app, figure detection and keypoints, pose matching and recommendations, AI image generation, Google sign-in.
 
 ## Production notes
 
