@@ -8,6 +8,7 @@ use App\Jobs\ProcessFigureAnalysis;
 use App\Models\Analysis;
 use App\Models\User;
 use App\Support\Requester;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
@@ -46,6 +47,27 @@ class AnalysisService
         ProcessFigureAnalysis::dispatch($analysis->id)->afterCommit();
 
         return $analysis;
+    }
+
+    /** Previous analyses of a signed-in user, or of a guest device, newest first (HIST-01). */
+    public function historyFor(Requester $requester, int $perPage = 20): LengthAwarePaginator
+    {
+        return Analysis::query()
+            ->when(
+                $requester->user !== null,
+                fn ($q) => $q->where('user_id', $requester->user->id),
+                fn ($q) => $q->whereNull('user_id')->where('guest_key_hash', Analysis::hashGuestKey((string) $requester->guestKey)),
+            )
+            ->with(['profile', 'recommendations.pose.profile'])
+            ->latest('id')
+            ->paginate($perPage);
+    }
+
+    /** Removes the analysis together with the user's photo (HIST-03, PRD 15.1). */
+    public function delete(Analysis $analysis): void
+    {
+        $this->storage->delete($analysis->image_disk, $analysis->image_path);
+        $analysis->delete();
     }
 
     /**
