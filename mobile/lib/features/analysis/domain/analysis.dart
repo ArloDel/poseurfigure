@@ -27,6 +27,9 @@ class Analysis {
     this.retryable = false,
     this.issues = const [],
     this.sharpness,
+    this.createdAt,
+    this.profile,
+    this.recommendationCount = 0,
   });
 
   final String id;
@@ -37,6 +40,9 @@ class Analysis {
   final bool retryable;
   final List<QualityIssue> issues;
   final double? sharpness;
+  final DateTime? createdAt;
+  final String? profile;
+  final int recommendationCount;
 
   factory Analysis.fromJson(Map<String, dynamic> json) {
     final error = json['error'] as Map<String, dynamic>?;
@@ -49,6 +55,9 @@ class Analysis {
       errorMessage: error?['message'] as String?,
       retryable: error?['retryable'] as bool? ?? false,
       sharpness: (quality?['sharpness'] as num?)?.toDouble(),
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
+      profile: json['profile'] as String?,
+      recommendationCount: (json['recommendations'] as List?)?.length ?? 0,
       issues: [
         for (final i in (quality?['issues'] as List? ?? const []))
           QualityIssue((i as Map)['code'] as String, i['message'] as String),
