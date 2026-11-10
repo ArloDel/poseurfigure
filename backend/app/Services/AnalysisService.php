@@ -6,6 +6,7 @@ use App\Enums\AnalysisMode;
 use App\Enums\AnalysisStatus;
 use App\Jobs\ProcessFigureAnalysis;
 use App\Models\Analysis;
+use App\Models\User;
 use App\Support\Requester;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -45,5 +46,16 @@ class AnalysisService
         ProcessFigureAnalysis::dispatch($analysis->id)->afterCommit();
 
         return $analysis;
+    }
+
+    /**
+     * Moves analyses made as a guest on this device to the user's account,
+     * so history survives signing up or signing in. Returns how many moved.
+     */
+    public function claimGuestAnalyses(User $user, string $guestKey): int
+    {
+        return Analysis::whereNull('user_id')
+            ->where('guest_key_hash', Analysis::hashGuestKey($guestKey))
+            ->update(['user_id' => $user->id, 'guest_key_hash' => null]);
     }
 }
