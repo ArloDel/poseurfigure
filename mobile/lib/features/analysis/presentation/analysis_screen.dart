@@ -79,7 +79,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton.filledTonal(
-                  onPressed: () => context.go('/'),
+                  onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   icon: const Icon(Icons.arrow_back_rounded),
                   tooltip: 'Back',
                 ),
