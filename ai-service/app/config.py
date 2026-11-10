@@ -18,6 +18,14 @@ class Settings(BaseSettings):
     min_brightness: float = 45.0  # mean luminance, 0-255
     max_brightness: float = 235.0
 
+    # Models (Sprint 4). Off = quality checks only, e.g. on a machine without the model cache.
+    models_enabled: bool = True
+    model_cache_dir: str | None = None  # defaults to the Hugging Face cache (HF_HOME)
+    warmup: bool = False  # load models at startup so the first analysis isn't slow
+    detection_threshold: float = 0.2
+    # Below this, the app asks the user to confirm the figure type (FIG-03).
+    min_profile_confidence: float = 0.6
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,20 +1,61 @@
 import logging
 import time
 import uuid
+from contextlib import asynccontextmanager
+from functools import lru_cache
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import Settings, get_settings
 from app.schemas.analysis import AnalyzeResponse, SkeletonProfile
 from app.services.image_quality import UnreadableImage, assess, load_image
+from app.services.pipeline import Pipeline
 from app.services.profiles import load_profiles
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("figurepose.ai")
 
-MODEL_VERSION = "quality-check-0.1"
+QUALITY_ONLY_VERSION = "quality-check-0.1"
 
-app = FastAPI(title="FigurePose AI", version=get_settings().version)
+
+@lru_cache
+def build_pipeline() -> Pipeline:
+    """Real models, created once. They load lazily on first use (or at startup with AI_WARMUP)."""
+    from app.models.figure_classifier import Siglip2Classifier
+    from app.models.object_detector import Owlv2Detector
+    from app.models.pose_estimator import VitPoseEstimator
+
+    s = get_settings()
+    return Pipeline(
+        Owlv2Detector(threshold=s.detection_threshold, cache_dir=s.model_cache_dir),
+        Siglip2Classifier(cache_dir=s.model_cache_dir),
+        VitPoseEstimator(cache_dir=s.model_cache_dir),
+        load_profiles(s.skeleton_profiles_path),
+        min_profile_confidence=s.min_profile_confidence,
+    )
+
+
+def get_pipeline() -> Pipeline | None:
+    return build_pipeline() if get_settings().models_enabled else None
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    s = get_settings()
+    if s.models_enabled and s.warmup:
+        from PIL import Image
+
+        from app.services.image_quality import assess as _assess
+
+        t = time.perf_counter()
+        img = Image.new("RGB", (640, 640), "white")
+        await run_in_threadpool(build_pipeline().run, img, _assess(img, s))
+        log.info("models warmed up in %.1fs", time.perf_counter() - t)
+    yield
+
+
+app = FastAPI(title="FigurePose AI", version=get_settings().version, lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -33,7 +74,7 @@ async def request_id(request: Request, call_next):
 def health(settings: Settings = Depends(get_settings)) -> dict:
     profiles = load_profiles(settings.skeleton_profiles_path)
     return {"status": "ok", "service": settings.service_name, "version": settings.version,
-            "model_version": MODEL_VERSION, "profiles": sorted(profiles)}
+            "models_enabled": settings.models_enabled, "profiles": sorted(profiles)}
 
 
 @app.get("/v1/profiles")
@@ -45,7 +86,9 @@ def profiles(settings: Settings = Depends(get_settings)) -> list[SkeletonProfile
 async def analyze(
     image: UploadFile = File(...),
     profile: str | None = Form(None),
+    figure_index: int | None = Form(None),
     settings: Settings = Depends(get_settings),
+    pipeline: Pipeline | None = Depends(get_pipeline),
 ) -> AnalyzeResponse:
     known = load_profiles(settings.skeleton_profiles_path)
     if profile is not None and profile not in known:
@@ -61,5 +104,9 @@ async def analyze(
         raise HTTPException(422, str(exc)) from exc
 
     quality = assess(img, settings)
-    # Sprint 4 adds detection, profile classification and keypoints after a passing quality check.
-    return AnalyzeResponse(model_version=MODEL_VERSION, stage="quality_only", profile=profile, quality=quality, pose=None)
+    if not quality.ok or pipeline is None:
+        return AnalyzeResponse(model_version=pipeline.version if pipeline else QUALITY_ONLY_VERSION,
+                               stage="quality_only", profile=profile, quality=quality)
+
+    # Model inference is CPU-bound: keep it off the event loop.
+    return await run_in_threadpool(pipeline.run, img, quality, profile, figure_index)
