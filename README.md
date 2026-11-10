@@ -9,7 +9,7 @@ Product spec: [docs/PRD.md](docs/PRD.md). UI prototype: [design/ui-prototype.htm
 figurepose/
 ├── mobile/          Flutter app (Android, iOS, web, Windows)
 ├── backend/         Laravel 13 REST API + queue worker
-├── ai-service/      Python FastAPI: image checks now, detection and keypoints later
+├── ai-service/      Python FastAPI: photo checks, figure detection, type and keypoints
 ├── shared/          Skeleton profiles read by both backend and AI service
 ├── infrastructure/  Postgres init SQL (nginx/ and docker/ reserved for later)
 ├── design/          Clickable UI prototype and stand-in photos (CC-licensed)
@@ -24,7 +24,7 @@ figurepose/
 | Docker Desktop | Compose v2+ | API, worker, AI service, Postgres, Redis, SeaweedFS (S3) |
 | Flutter | 3.47 stable (Dart 3.13) | Mobile app |
 | PHP + Composer | PHP 8.4, Composer 2 | Running backend tests outside Docker (optional) |
-| Python | 3.12+ | Running AI tests outside Docker (optional) |
+| Python | 3.12+ | Running AI tests or the model evaluation outside Docker (optional) |
 
 For Android builds you also need Android Studio (SDK + emulator). iOS builds need a Mac with Xcode.
 
@@ -102,6 +102,8 @@ cd backend && php artisan test
 cd ai-service && python -m pytest
 ```
 
+AI tests use fake models, so they run in seconds without downloading anything.
+
 ```bash
 cd mobile && flutter analyze && flutter test
 ```
@@ -137,6 +139,7 @@ Access: **open** needs nothing, **owner** needs a bearer token or `X-Guest-Key`,
 | GET | `/analyses` | owner | History, newest first |
 | GET | `/analyses/{analysis_id}` | owner | Status, quality report, errors |
 | DELETE | `/analyses/{analysis_id}` | owner | Deletes the analysis and the stored photo |
+| POST | `/analyses/{analysis_id}/profile` | owner | `figure_profile_id`. The user confirms or corrects the figure type; the photo is analyzed again with it |
 | GET | `/favorites` | account | Saved catalog poses |
 | POST | `/favorites` | account | `pose_id`. Saving twice keeps one favorite |
 | DELETE | `/favorites/{id}` | account | Remove a favorite |
@@ -145,7 +148,9 @@ Access: **open** needs nothing, **owner** needs a bearer token or `X-Guest-Key`,
 
 **Who owns an analysis.** Signed-in users send a Sanctum bearer token. Guests send `X-Guest-Key`: a UUID the app creates once and keeps in secure storage. The server stores only an HMAC of it. Anyone else gets `404`. If `X-Guest-Key` is sent with register or login, analyses made as a guest on that device move to the account.
 
-**Lifecycle.** `pending → processing → completed`, or `failed`. An unsuitable photo (blurry, dark, too small) fails at once with a reason. An AI-service outage is retried 3 times, then fails with `retryable: true`.
+**Lifecycle.** `pending → processing → completed`, or `failed`. An unsuitable photo (blurry, dark, too small, or no figure found) fails at once with a reason. An AI-service outage is retried 3 times, then fails with `retryable: true`.
+
+**Analysis result.** A completed analysis returns `figures` (detected boxes), `selected_figure`, `classification` (type, confidence, `needs_confirmation`, `source`: `model` or `user`) and `pose`: 16 keypoints for humanoid and anime figures (19 for mecha, of which armor and backpack aren't estimated yet) with confidence and visibility, joint angles where three joints are visible, a rough camera view, and a pose embedding for matching in Sprint 5. Coordinates are normalized to the photo. Angles are 2D estimates.
 
 ## Environment variables
 
@@ -168,7 +173,9 @@ Backend (`backend/.env`, overridden by Compose inside containers):
 | `ANALYSIS_MAX_ATTEMPTS` | `3` | Retries when the AI service fails |
 | `SKELETON_PROFILES_PATH` | `../shared/skeleton_profiles` | Profile JSON used by the seeder |
 
-AI service (prefix `AI_`): `AI_SKELETON_PROFILES_PATH`, `AI_MIN_SHARPNESS` (60), `AI_MIN_BRIGHTNESS` (45), `AI_MAX_BRIGHTNESS` (235), `AI_MIN_DIMENSION` (480), `AI_MAX_UPLOAD_MB` (12).
+AI service (prefix `AI_`): `AI_SKELETON_PROFILES_PATH`, `AI_MIN_SHARPNESS` (60), `AI_MIN_BRIGHTNESS` (45), `AI_MAX_BRIGHTNESS` (235), `AI_MIN_DIMENSION` (480), `AI_MAX_UPLOAD_MB` (12), `AI_MODELS_ENABLED` (true; false = photo checks only), `AI_WARMUP` (false; true in Compose), `AI_MODEL_CACHE_DIR` (Hugging Face cache by default), `AI_DETECTION_THRESHOLD` (0.2), `AI_MIN_PROFILE_CONFIDENCE` (0.6, below it the app asks the user to confirm the type).
+
+Backend: `AI_SERVICE_TIMEOUT` is 60 s in Compose, since CPU inference takes about 10 s per photo.
 
 Mobile (`--dart-define`): `API_BASE_URL`.
 
@@ -202,7 +209,49 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] 20 widget and unit tests with fake repositories
 - [x] Dev API responds in under 0.5 s (OPcache, vendor in a Docker volume)
 
-Not yet built (later sprints): figure detection and keypoints, pose matching and recommendations, AI image generation, Google sign-in, crop and rotate before upload.
+## Sprint 4 status
+
+- [x] Figure detection (OWLv2), figure type (SigLIP 2) and keypoints (ViTPose), all Apache-2.0, revisions pinned
+- [x] Keypoints mapped to the shared skeleton profiles, with visibility, joint angles, camera view and a pose embedding
+- [x] Photos with no figure fail with a clear reason; an unsure type asks the user to confirm and re-runs (FIG-03)
+- [x] Hand-labeled evaluation set (38 CC-licensed photos) and an evaluation script with a baseline report
+- [x] App shows the figure type, joints found, hidden joints and angles, with the skeleton drawn on the photo
+- [x] Runs on CPU in Docker, one inference at a time, about 10 s per photo
+
+Not yet built (later sprints): pose matching and recommendations, AI image generation, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset).
+
+## AI models and evaluation
+
+| Step | Model | License |
+|---|---|---|
+| Find figures | `google/owlv2-base-patch16-ensemble` (zero-shot detection) | Apache-2.0 |
+| Figure type | `google/siglip2-base-patch16-224` (zero-shot, prompt ensemble) | Apache-2.0 |
+| Keypoints | `usyd-community/vitpose-base-simple` (COCO-17, mapped to our profiles) | Apache-2.0 |
+
+All three are used as-is, without training on figures. Revisions are pinned in `ai-service/app/models/registry.py`. OpenAI CLIP was not used: its model card rules out deployed use.
+
+Baseline on `eval_v1` (full report: [ai-service/reports/eval_v1.md](ai-service/reports/eval_v1.md)):
+
+| Measure | Result | PRD target |
+|---|---|---|
+| Main figure found | 33/34 photos (97%) | ≥ 85% |
+| Detection precision / recall | 92% / 98% | |
+| Photos without figures (incl. real people) left empty | 4/4 | |
+| Figure type, end to end | 32/34 (94%) | |
+| Keypoints within 10% of figure size (PCK@0.1) | 90% | measured prototype |
+| Time per photo, CPU | ~9 s (8.7 s mean on a 12-thread desktop) | ≤ 15 s |
+
+Known limits: the set is small and labeled by one person, so treat these as a baseline, not production accuracy. ViTPose is a model for people; it works well on humanoid figures but has no armor or backpack points for mecha. The type classifier is rarely unsure, so it seldom asks the user to confirm even when it is wrong (2 humanoid figures read as anime). Loose accessories next to a figure can show up as extra detections.
+
+To run the evaluation locally (downloads ~1.3 GB of models on first run):
+
+```bash
+cd ai-service && pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements-dev.txt
+```
+
+```bash
+cd ai-service && python -m eval.run_eval
+```
 
 ## Production notes
 
