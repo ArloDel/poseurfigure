@@ -38,5 +38,7 @@ Route::prefix('v1')->group(function () {
 
     // Analyses work for guests too (X-Guest-Key), so they are not behind auth:sanctum.
     Route::post('/analyses', [AnalysisController::class, 'store'])->middleware('throttle:analyses');
+    Route::get('/analyses', [AnalysisController::class, 'index']);
     Route::get('/analyses/{analysis}', [AnalysisController::class, 'show'])->whereUuid('analysis');
+    Route::delete('/analyses/{analysis}', [AnalysisController::class, 'destroy'])->whereUuid('analysis');
 });

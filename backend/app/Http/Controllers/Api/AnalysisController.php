@@ -35,6 +35,30 @@ class AnalysisController extends ApiController
         ], 'Analysis started', 202);
     }
 
+    public function index(Request $request): JsonResponse
+    {
+        $requester = Requester::fromRequest($request);
+        abort_unless($requester->isIdentified(), 401, 'Sign in, or send an X-Guest-Key header (a UUID) to see your history.');
+
+        $page = $this->analyses->historyFor($requester);
+
+        return response()->json([
+            'success' => true,
+            'data' => AnalysisResource::collection($page->getCollection())->resolve($request),
+            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+        ]);
+    }
+
+    public function destroy(Request $request, Analysis $analysis): JsonResponse
+    {
+        $requester = Requester::fromRequest($request);
+        abort_unless($analysis->isOwnedBy($requester->user, $requester->guestKey), 404);
+
+        $this->analyses->delete($analysis);
+
+        return $this->ok(null, 'Analysis and photo deleted');
+    }
+
     public function show(Request $request, Analysis $analysis): JsonResponse
     {
         $requester = Requester::fromRequest($request);
