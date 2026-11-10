@@ -132,6 +132,49 @@ class FakeAnalysisRepository implements AnalysisRepository {
 
   @override
   Future<bool> serverHealthy() async => true;
+
+  final confirmed = <(String, int)>[];
+
+  @override
+  Future<Map<String, int>> profileIds() async => {'humanoid_v1': 1, 'anime_v1': 2, 'mecha_v1': 3};
+
+  @override
+  Future<void> confirmProfile(String id, int profileId) async {
+    confirmed.add((id, profileId));
+    // The server re-analyzes with the chosen type; the next fetch returns that result.
+    final i = items.indexWhere((a) => a.id == id);
+    if (i >= 0) items[i] = analysisResult(id, profile: {1: 'humanoid_v1', 2: 'anime_v1', 3: 'mecha_v1'}[profileId]!, byUser: true);
+  }
+}
+
+/// A completed analysis as the API returns it.
+Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confidence = 0.9, bool needsConfirmation = false, bool byUser = false}) {
+  Map<String, dynamic> kp(double x, double y, [String vis = 'visible']) => {'x': x, 'y': y, 'confidence': 0.9, 'visibility': vis};
+  return Analysis.fromJson({
+    'analysis_id': id,
+    'status': 'completed',
+    'profile': profile,
+    'created_at': DateTime.now().toIso8601String(),
+    'image': {'width': 900, 'height': 1200},
+    'figures': [{'bbox': [0.2, 0.1, 0.8, 0.95], 'score': 0.7}],
+    'classification': {'profile': profile, 'confidence': byUser ? 1.0 : confidence, 'needs_confirmation': needsConfirmation,
+      'source': byUser ? 'user' : 'model'},
+    'pose': {
+      'visible_count': 15,
+      'hidden': ['left_wrist'],
+      'orientation': 'front',
+      'joint_angles': {'right_elbow': 95.4, 'left_knee': 171.0},
+      'keypoints': {
+        for (final (i, n) in const [
+          'head', 'neck', 'chest', 'waist', 'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+          'left_wrist', 'right_wrist', 'left_hip', 'right_hip', 'left_knee', 'right_knee', 'left_ankle', 'right_ankle',
+        ].indexed)
+          n: n == 'left_wrist'
+              ? {'x': null, 'y': null, 'confidence': 0.1, 'visibility': 'not_visible'}
+              : kp(0.3 + 0.02 * i, 0.1 + 0.05 * i),
+      },
+    },
+  });
 }
 
 class TestApp {
