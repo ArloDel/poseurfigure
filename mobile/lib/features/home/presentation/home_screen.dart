@@ -41,9 +41,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 120),
       children: [
-        Text('Good evening, collector', style: text.bodySmall),
-        const SizedBox(height: 2),
-        Text('Ready to pose?', style: text.headlineMedium),
+        Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Good evening, collector', style: text.bodySmall),
+              const SizedBox(height: 2),
+              Text('Ready to pose?', style: text.headlineMedium),
+            ]),
+          ),
+          IconButton.filledTonal(
+            onPressed: () => context.push('/history'),
+            icon: const Icon(Icons.history_rounded),
+            tooltip: 'History',
+          ),
+        ]),
         const SizedBox(height: 16),
         SizedBox(
           height: 330,
