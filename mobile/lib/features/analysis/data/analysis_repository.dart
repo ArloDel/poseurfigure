@@ -34,6 +34,25 @@ class AnalysisRepository {
     }
   }
 
+  /// Analyses of the signed-in user, or of this device for a guest, newest first.
+  Future<List<Analysis>> history() async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/analyses');
+      return [for (final a in res.data!['data'] as List) Analysis.fromJson(a as Map<String, dynamic>)];
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+  }
+
+  /// Deletes the analysis and the stored photo.
+  Future<void> delete(String id) async {
+    try {
+      await _dio.delete<void>('/analyses/$id');
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+  }
+
   Future<bool> serverHealthy() async {
     try {
       final res = await _dio.get<Map<String, dynamic>>('/health');
