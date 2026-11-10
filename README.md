@@ -86,10 +86,10 @@ cd ai-service && python -m pytest
 cd mobile && flutter analyze && flutter test
 ```
 
-Or run the backend and AI tests inside the containers (the backend tests use an in-memory SQLite database, not the dev Postgres):
+Or run the backend and AI tests inside the containers. Backend tests always use an in-memory SQLite database: `phpunit.xml` overrides the container's Postgres settings, and the base `TestCase` refuses to run against anything else, so the dev database is never wiped.
 
 ```bash
-docker compose exec -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: api php artisan test
+docker compose exec api php artisan test
 ```
 
 ```bash
