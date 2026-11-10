@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 import uuid
@@ -17,6 +18,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger("figurepose.ai")
 
 QUALITY_ONLY_VERSION = "quality-check-0.1"
+
+# Inference is CPU-bound and already uses every core. Running two at once makes both several
+# times slower (a retried request piling onto one that timed out took 133 s instead of 9 s),
+# so requests wait their turn. Scale out with more AI service replicas, not concurrency.
+_inference_slot = asyncio.Semaphore(1)
 
 
 @lru_cache
@@ -108,5 +114,6 @@ async def analyze(
         return AnalyzeResponse(model_version=pipeline.version if pipeline else QUALITY_ONLY_VERSION,
                                stage="quality_only", profile=profile, quality=quality)
 
-    # Model inference is CPU-bound: keep it off the event loop.
-    return await run_in_threadpool(pipeline.run, img, quality, profile, figure_index)
+    # Model inference is CPU-bound: keep it off the event loop, one at a time.
+    async with _inference_slot:
+        return await run_in_threadpool(pipeline.run, img, quality, profile, figure_index)
