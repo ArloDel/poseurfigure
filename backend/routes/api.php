@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AnalysisController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\FigureController;
 use App\Http\Controllers\Api\FigureProfileController;
 use App\Http\Controllers\Api\HealthController;
@@ -26,6 +27,10 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/figures', [FigureController::class, 'index']);
         Route::post('/figures', [FigureController::class, 'store']);
+
+        Route::get('/favorites', [FavoriteController::class, 'index']);
+        Route::post('/favorites', [FavoriteController::class, 'store']);
+        Route::delete('/favorites/{favorite}', [FavoriteController::class, 'destroy'])->whereNumber('favorite');
     });
 
     Route::get('/poses', [PoseController::class, 'index']);
