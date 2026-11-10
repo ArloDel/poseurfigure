@@ -25,4 +25,5 @@ ENTRYPOINT ["docker/entrypoint.sh"]
 # (DB_HOST, AI_SERVICE_URL...) for its child process and falls back to backend/.env.
 ENV PHP_CLI_SERVER_WORKERS=4
 # The router resolves index.php from the working directory, so serve from public/.
-CMD ["sh", "-c", "cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
+# docker/router.php adds CORS to catalog photos, then hands off to Laravel's server.php.
+CMD ["sh", "-c", "cd public && exec php -S 0.0.0.0:8000 ../docker/router.php"]
