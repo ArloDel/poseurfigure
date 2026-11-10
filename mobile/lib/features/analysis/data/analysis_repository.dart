@@ -34,6 +34,25 @@ class AnalysisRepository {
     }
   }
 
+  /// Supported figure types, for the "which type is it?" picker. Returns slug -> id.
+  Future<Map<String, int>> profileIds() async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/figures/profiles');
+      return {for (final p in res.data!['data'] as List) (p as Map)['slug'] as String: p['id'] as int};
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+  }
+
+  /// Re-analyzes the photo with the type the user picked (FIG-03). The analysis goes back to pending.
+  Future<void> confirmProfile(String id, int profileId) async {
+    try {
+      await _dio.post<void>('/analyses/$id/profile', data: {'figure_profile_id': profileId});
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+  }
+
   /// Analyses of the signed-in user, or of this device for a guest, newest first.
   Future<List<Analysis>> history() async {
     try {
