@@ -1,0 +1,400 @@
+{
+ "dataset": "eval_v1",
+ "images": 38,
+ "detection": {
+  "precision": 0.925,
+  "recall": 0.98,
+  "tp": 49,
+  "fp": 4,
+  "fn": 1,
+  "main_figure_found": "33/34",
+  "photos_without_figures_clean": "4/4",
+  "picked_a_real_figure": "33/34"
+ },
+ "classification": {
+  "accuracy": 0.98,
+  "end_to_end": "32/34",
+  "asks_confirmation": "0/50",
+  "accuracy_when_confident": 0.98,
+  "confusion": {
+   "anime_v1->anime_v1": 11,
+   "humanoid_v1->anime_v1": 1,
+   "humanoid_v1->humanoid_v1": 27,
+   "mecha_v1->mecha_v1": 11
+  }
+ },
+ "keypoints": {
+  "figures": 18,
+  "visible_labels": 236,
+  "pck@0.10": 0.903,
+  "pck@0.05": 0.614,
+  "predicted_visibility_of_visible_labels": {
+   "visible": 231,
+   "uncertain": 3,
+   "not_visible": 2
+  },
+  "left_right_swaps": "2/36"
+ },
+ "latency_ms": {
+  "mean": 8679,
+  "p50": 8555,
+  "p95": 9799,
+  "model_load_and_first_run_s": 39.8
+ },
+ "environment": {
+  "machine": "AMD64",
+  "processor": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+  "cpus": 12,
+  "python": "3.14.7",
+  "models": {
+   "detector": "owlv2-base-patch16-ensemble@cfd3195",
+   "classifier": "siglip2-base-patch16-224@75de2d5",
+   "pose": "vitpose-base-simple@a93ac0c"
+  },
+  "pipeline": "pipeline-0.2+owlv2-base-patch16-ensemble@cfd3195+siglip2-base-patch16-224@75de2d5+vitpose-base-simple@a93ac0c"
+ },
+ "per_image": [
+  {
+   "file": "001.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8451
+  },
+  {
+   "file": "002.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8101
+  },
+  {
+   "file": "003.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 9481
+  },
+  {
+   "file": "004.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 9799
+  },
+  {
+   "file": "005.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 8699
+  },
+  {
+   "file": "007.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8192
+  },
+  {
+   "file": "008.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8397
+  },
+  {
+   "file": "009.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8251
+  },
+  {
+   "file": "010.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8497
+  },
+  {
+   "file": "011.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8167
+  },
+  {
+   "file": "012.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 8338
+  },
+  {
+   "file": "013.jpg",
+   "figures": 1,
+   "detected": 4,
+   "tp": 1,
+   "fp": 3,
+   "profile": "humanoid_v1",
+   "ms": 8103
+  },
+  {
+   "file": "014.jpg",
+   "figures": 2,
+   "detected": 2,
+   "tp": 2,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8100
+  },
+  {
+   "file": "015.jpg",
+   "figures": 7,
+   "detected": 7,
+   "tp": 7,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8865
+  },
+  {
+   "file": "016.jpg",
+   "figures": 3,
+   "detected": 3,
+   "tp": 3,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 9162
+  },
+  {
+   "file": "017.jpg",
+   "figures": 4,
+   "detected": 4,
+   "tp": 4,
+   "fp": 0,
+   "profile": "humanoid_v1",
+   "ms": 8217
+  },
+  {
+   "file": "018.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 8816
+  },
+  {
+   "file": "019.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 8699
+  },
+  {
+   "file": "020.jpg",
+   "figures": 2,
+   "detected": 2,
+   "tp": 2,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 9027
+  },
+  {
+   "file": "021.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 9344
+  },
+  {
+   "file": "022.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 8913
+  },
+  {
+   "file": "023.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 9668
+  },
+  {
+   "file": "024.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 8910
+  },
+  {
+   "file": "025.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 8887
+  },
+  {
+   "file": "026.jpg",
+   "figures": 2,
+   "detected": 2,
+   "tp": 2,
+   "fp": 0,
+   "profile": "anime_v1",
+   "ms": 8524
+  },
+  {
+   "file": "027.jpg",
+   "figures": 1,
+   "detected": 4,
+   "tp": 1,
+   "fp": 0,
+   "profile": "mecha_v1",
+   "ms": 9104
+  },
+  {
+   "file": "028.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 0,
+   "fp": 1,
+   "profile": "mecha_v1",
+   "ms": 8560
+  },
+  {
+   "file": "029.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "mecha_v1",
+   "ms": 8384
+  },
+  {
+   "file": "030.jpg",
+   "figures": 2,
+   "detected": 2,
+   "tp": 2,
+   "fp": 0,
+   "profile": "mecha_v1",
+   "ms": 8672
+  },
+  {
+   "file": "031.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "mecha_v1",
+   "ms": 8478
+  },
+  {
+   "file": "032.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "mecha_v1",
+   "ms": 8750
+  },
+  {
+   "file": "033.jpg",
+   "figures": 1,
+   "detected": 1,
+   "tp": 1,
+   "fp": 0,
+   "profile": "mecha_v1",
+   "ms": 8550
+  },
+  {
+   "file": "034.jpg",
+   "figures": 2,
+   "detected": 2,
+   "tp": 2,
+   "fp": 0,
+   "profile": "mecha_v1",
+   "ms": 9344
+  },
+  {
+   "file": "035.jpg",
+   "figures": 1,
+   "detected": 2,
+   "tp": 1,
+   "fp": 0,
+   "profile": "mecha_v1",
+   "ms": 10108
+  },
+  {
+   "file": "036.jpg",
+   "figures": 0,
+   "detected": 0,
+   "tp": 0,
+   "fp": 0,
+   "profile": null,
+   "ms": 8141
+  },
+  {
+   "file": "037.jpg",
+   "figures": 0,
+   "detected": 0,
+   "tp": 0,
+   "fp": 0,
+   "profile": null,
+   "ms": 7949
+  },
+  {
+   "file": "038.jpg",
+   "figures": 0,
+   "detected": 0,
+   "tp": 0,
+   "fp": 0,
+   "profile": null,
+   "ms": 8260
+  },
+  {
+   "file": "039.jpg",
+   "figures": 0,
+   "detected": 0,
+   "tp": 0,
+   "fp": 0,
+   "profile": null,
+   "ms": 7887
+  }
+ ]
+}
