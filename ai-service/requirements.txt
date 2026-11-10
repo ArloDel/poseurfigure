@@ -4,3 +4,7 @@ python-multipart>=0.0.9
 pydantic-settings>=2.4,<3.0
 pillow>=11.0
 numpy>=2.0,<3.0
+# Models (Sprint 4). torch is installed separately from the CPU-only index; see Dockerfile and README.
+transformers==5.22.2
+# ViTPose's image processor needs scipy but transformers doesn't declare it.
+scipy>=1.14,<2.0
