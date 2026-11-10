@@ -49,6 +49,25 @@ class AnalysisService
         return $analysis;
     }
 
+    /** Re-analyzes the stored photo with a type the user picked (FIG-03). */
+    public function rerunWithProfile(Analysis $analysis, int $profileId): void
+    {
+        $analysis->update([
+            'analysis_mode' => AnalysisMode::Manual,
+            'figure_profile_id' => $profileId,
+            'status' => AnalysisStatus::Pending,
+            'pose_data' => null,
+            'failure_code' => null,
+            'failure_message' => null,
+            'attempts' => 0,
+            'started_at' => null,
+            'completed_at' => null,
+        ]);
+        $analysis->recommendations()->delete();
+
+        ProcessFigureAnalysis::dispatch($analysis->id)->afterCommit();
+    }
+
     /** Previous analyses of a signed-in user, or of a guest device, newest first (HIST-01). */
     public function historyFor(Requester $requester, int $perPage = 20): LengthAwarePaginator
     {

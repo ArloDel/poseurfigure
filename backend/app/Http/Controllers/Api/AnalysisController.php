@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\AnalysisMode;
+use App\Enums\AnalysisStatus;
 use App\Http\Requests\StoreAnalysisRequest;
 use App\Http\Resources\AnalysisResource;
 use App\Models\Analysis;
@@ -10,6 +11,7 @@ use App\Services\AnalysisService;
 use App\Support\Requester;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AnalysisController extends ApiController
 {
@@ -57,6 +59,30 @@ class AnalysisController extends ApiController
         $this->analyses->delete($analysis);
 
         return $this->ok(null, 'Analysis and photo deleted');
+    }
+
+    /**
+     * The user confirms or corrects the figure type (FIG-03). The photo is analyzed again with that
+     * type's skeleton; the response is the pending analysis, like a new upload.
+     */
+    public function confirmProfile(Request $request, Analysis $analysis): JsonResponse
+    {
+        $requester = Requester::fromRequest($request);
+        abort_unless($analysis->isOwnedBy($requester->user, $requester->guestKey), 404);
+
+        $data = $request->validate([
+            'figure_profile_id' => ['required', 'integer', Rule::exists('figure_profiles', 'id')->where('is_active', true)],
+        ], ['figure_profile_id.exists' => 'Pick one of the supported figure types.']);
+
+        abort_unless($analysis->status === AnalysisStatus::Completed, 409, 'Only a finished analysis can be re-run with another figure type.');
+
+        $this->analyses->rerunWithProfile($analysis, (int) $data['figure_profile_id']);
+
+        return $this->ok([
+            'analysis_id' => $analysis->public_id,
+            'status' => $analysis->status->value,
+            'poll_after_seconds' => config('figurepose.analysis.poll_after_seconds'),
+        ], 'Analyzing again with the chosen figure type', 202);
     }
 
     public function show(Request $request, Analysis $analysis): JsonResponse

@@ -41,4 +41,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/analyses', [AnalysisController::class, 'index']);
     Route::get('/analyses/{analysis}', [AnalysisController::class, 'show'])->whereUuid('analysis');
     Route::delete('/analyses/{analysis}', [AnalysisController::class, 'destroy'])->whereUuid('analysis');
+    Route::post('/analyses/{analysis}/profile', [AnalysisController::class, 'confirmProfile'])
+        ->whereUuid('analysis')->middleware('throttle:analyses');
 });
