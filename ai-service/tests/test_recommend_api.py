@@ -27,7 +27,8 @@ def test_ranks_closest_pose_first_and_limits_to_top_k():
     res = client.post("/v1/recommend", json=request([(1, ARM_UP), (2, STANDING), (3, TIGHT_ELBOW)], top_k=2))
     assert res.status_code == 200
     body = res.json()
-    assert body["matcher_version"] == "match-0.1"
+    assert body["matcher_version"] == "match-0.2"
+    assert body["basis"] == "pose"
     assert [r["id"] for r in body["results"]] == [2, 1]
     top = body["results"][0]
     assert top["similarity"] > 0.99 and top["feasibility"] == 1.0

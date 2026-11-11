@@ -137,34 +137,9 @@ def match(query: PoseView, cand: PoseView, profile: SkeletonProfile) -> Match:
     return Match(round(s, 4), {k: round(v, 4) for k, v in comps.items()}, shared, is_mirror)
 
 
-MATCHER_VERSION = "match-0.1"
-# Sprint 5 ranking: mostly "how close is this to what your figure already does", with room for poses
-# your figure can actually hold. Sprint 6 adds diversity so the list isn't five versions of one pose.
-RANK_SIMILARITY, RANK_FEASIBILITY = 0.7, 0.3
-
-
 def to_view(points: dict, image_size: tuple[int, int]) -> PoseView:
     kps = {n: Keypoint(x=p.x, y=p.y, confidence=p.confidence, visibility=p.visibility) for n, p in points.items()}
     return PoseView(kps, image_size[0] / image_size[1])
-
-
-def recommend(request, profile: SkeletonProfile):
-    from app.schemas.analysis import Recommendation, RecommendResponse
-
-    query = to_view(request.pose.keypoints, request.pose.image_size)
-    limits = {j: lim.model_dump() for j, lim in request.figure_limits.items()}
-    results = []
-    for c in request.candidates:
-        cand = to_view(c.keypoints, c.image_size)
-        m = match(query, cand, profile)
-        f = feasibility(cand.angles, profile, limits)
-        results.append(Recommendation(
-            id=c.id, score=round(RANK_SIMILARITY * m.similarity + RANK_FEASIBILITY * f.score, 4),
-            similarity=m.similarity, feasibility=f.score, components=m.components,
-            shared_joints=m.shared_joints, mirrored=m.mirrored, warnings=f.warnings,
-        ))
-    results.sort(key=lambda r: r.score, reverse=True)
-    return RecommendResponse(matcher_version=MATCHER_VERSION, profile=profile.profile, results=results[: max(0, request.top_k)])
 
 
 def feasibility(target_angles: dict[str, float], profile: SkeletonProfile,

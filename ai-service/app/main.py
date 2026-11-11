@@ -12,7 +12,7 @@ from app.config import Settings, get_settings
 from app.schemas.analysis import AnalyzeResponse, RecommendRequest, RecommendResponse, SkeletonProfile
 from app.services.image_quality import UnreadableImage, assess, load_image
 from app.services.pipeline import Pipeline
-from app.services.pose_matcher import recommend
+from app.services.recommender import rank
 from app.services.profiles import load_profiles
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -95,7 +95,7 @@ def recommend_poses(request: RecommendRequest, settings: Settings = Depends(get_
     known = load_profiles(settings.skeleton_profiles_path)
     if request.profile not in known:
         raise HTTPException(422, f"Unknown profile '{request.profile}'. Known: {', '.join(sorted(known))}.")
-    return recommend(request, known[request.profile])
+    return rank(request, known[request.profile])
 
 
 @app.post("/v1/analyze")
