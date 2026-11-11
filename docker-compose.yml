@@ -25,6 +25,7 @@ x-backend-env: &backend-env
   # CPU inference takes ~8-12 s per photo; leave headroom for a busy machine.
   AI_SERVICE_TIMEOUT: "60"
   SKELETON_PROFILES_PATH: /shared/skeleton_profiles
+  CATALOG_PATH: /shared/catalog/poses.json
 
 services:
   api:
