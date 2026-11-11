@@ -70,6 +70,55 @@ class AnalyzeResponse(BaseModel):
     timings_ms: dict[str, int] = {}
 
 
+class PosePoint(BaseModel):
+    x: float | None
+    y: float | None
+    visibility: Visibility = "visible"
+    confidence: float = 1.0
+
+
+class PoseInput(BaseModel):
+    keypoints: dict[str, PosePoint]
+    image_size: tuple[int, int]  # width, height of the photo the coordinates are normalized to
+
+
+class Candidate(PoseInput):
+    id: int
+    category: str | None = None
+    difficulty: str | None = None
+
+
+class JointLimit(BaseModel):
+    min: float
+    max: float
+
+
+class RecommendRequest(BaseModel):
+    profile: str
+    pose: PoseInput
+    candidates: list[Candidate]
+    # Known limits of the user's own figure (PRD 8.5). Overrides the profile's estimates.
+    figure_limits: dict[str, JointLimit] = {}
+    top_k: int = 5
+
+
+class Recommendation(BaseModel):
+    id: int
+    score: float
+    similarity: float
+    feasibility: float
+    components: dict[str, float]
+    shared_joints: int
+    mirrored: bool
+    warnings: list[dict]
+
+
+class RecommendResponse(BaseModel):
+    matcher_version: str
+    profile: str
+    results: list[Recommendation]
+
+
 class SkeletonProfile(BaseModel):
     profile: str
     name: str
