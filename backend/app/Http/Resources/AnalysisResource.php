@@ -35,8 +35,12 @@ class AnalysisResource extends JsonResource
                 $this->status === AnalysisStatus::Completed,
                 fn () => $this->recommendations->map(fn ($r) => [
                     'rank' => $r->rank,
+                    'score' => $r->score,
                     'similarity_score' => $r->similarity_score,
                     'feasibility_score' => $r->feasibility_score,
+                    // The user's figure matches this pose with left and right swapped: "mirror it".
+                    'mirrored' => (bool) ($r->details['mirrored'] ?? false),
+                    'warnings' => $r->details['warnings'] ?? [],
                     'pose' => (new PoseResource($r->pose))->resolve($request),
                 ])->all(),
             ),
