@@ -9,9 +9,10 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Upload
 from fastapi.concurrency import run_in_threadpool
 
 from app.config import Settings, get_settings
-from app.schemas.analysis import AnalyzeResponse, SkeletonProfile
+from app.schemas.analysis import AnalyzeResponse, RecommendRequest, RecommendResponse, SkeletonProfile
 from app.services.image_quality import UnreadableImage, assess, load_image
 from app.services.pipeline import Pipeline
+from app.services.pose_matcher import recommend
 from app.services.profiles import load_profiles
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -86,6 +87,15 @@ def health(settings: Settings = Depends(get_settings)) -> dict:
 @app.get("/v1/profiles")
 def profiles(settings: Settings = Depends(get_settings)) -> list[SkeletonProfile]:
     return list(load_profiles(settings.skeleton_profiles_path).values())
+
+
+@app.post("/v1/recommend")
+def recommend_poses(request: RecommendRequest, settings: Settings = Depends(get_settings)) -> RecommendResponse:
+    """Rank catalog poses for an analyzed figure (PRD 8.4). Geometry only, no models: fast and not queued."""
+    known = load_profiles(settings.skeleton_profiles_path)
+    if request.profile not in known:
+        raise HTTPException(422, f"Unknown profile '{request.profile}'. Known: {', '.join(sorted(known))}.")
+    return recommend(request, known[request.profile])
 
 
 @app.post("/v1/analyze")
