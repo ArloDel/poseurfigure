@@ -30,7 +30,7 @@ class AIService
      * @param  array<string, array{min: float, max: float}>  $figureLimits
      * @return array{matcher_version: string, results: list<array>}
      */
-    public function recommend(string $profile, array $keypoints, array $imageSize, array $candidates, array $figureLimits, int $topK, string $requestId): array
+    public function recommend(string $profile, array $keypoints, array $imageSize, array $candidates, array $figureLimits, int $topK, string $requestId, array $excludeIds = []): array
     {
         return $this->client()
             ->withHeaders(['X-Request-Id' => $requestId])
@@ -40,6 +40,7 @@ class AIService
                 'candidates' => $candidates,
                 'figure_limits' => (object) $figureLimits,
                 'top_k' => $topK,
+                'exclude_ids' => array_values($excludeIds),
             ])
             ->throw()
             ->json();
