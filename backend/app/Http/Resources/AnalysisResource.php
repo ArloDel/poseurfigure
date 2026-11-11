@@ -41,9 +41,17 @@ class AnalysisResource extends JsonResource
                     // The user's figure matches this pose with left and right swapped: "mirror it".
                     'mirrored' => (bool) ($r->details['mirrored'] ?? false),
                     'warnings' => $r->details['warnings'] ?? [],
+                    // close_to_current, new_direction, mirror, different_category, check_joints
+                    'reasons' => $r->details['reasons'] ?? [],
                     'pose' => (new PoseResource($r->pose))->resolve($request),
                 ])->all(),
             ),
+            // "pose": ranked against the figure's pose. "type_only": the pose couldn't be read, so these are
+            // varied poses for the figure type, not matches; the app should say so.
+            'recommendation_basis' => $this->when($this->status === AnalysisStatus::Completed,
+                fn () => $this->pose_data['recommendation']['basis'] ?? 'pose'),
+            'more_recommendations' => $this->when($this->status === AnalysisStatus::Completed,
+                fn () => ($this->pose_data['recommendation']['remaining'] ?? 0) > 0),
             'error' => $this->when($this->status === AnalysisStatus::Failed, fn () => [
                 'code' => $this->failure_code,
                 'message' => $this->failure_message,
