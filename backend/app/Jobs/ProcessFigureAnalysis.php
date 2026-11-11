@@ -77,13 +77,13 @@ class ProcessFigureAnalysis implements ShouldQueue
 
         // Rank catalog poses before marking the analysis done, so the app never sees "completed"
         // without recommendations. If ranking fails, the job throws and the queue retries it.
-        $rows = $profileSlug && isset($result['pose'])
+        $ranking = $profileSlug && isset($result['pose'])
             ? $recommendations->rank($analysis, $result['pose'], $profileSlug)
-            : [];
+            : ['rows' => [], 'basis' => 'pose', 'remaining' => 0, 'matcher_version' => null];
 
-        DB::transaction(function () use ($analysis, $result, $quality, $profileSlug, $rows, $recommendations) {
+        DB::transaction(function () use ($analysis, $result, $quality, $profileSlug, $ranking, $recommendations) {
             $this->complete($analysis, $result, $quality, $profileSlug);
-            $recommendations->replace($analysis, $rows);
+            $recommendations->replace($analysis, $ranking);
         });
     }
 
