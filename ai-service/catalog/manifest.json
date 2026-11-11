@@ -1,0 +1,405 @@
+{
+ "version": 1,
+ "notes": "Source of truth for the pose catalog. Run python -m catalog.build to download, crop and extract keypoints; it writes shared/catalog/poses.json.",
+ "poses": [
+  {
+   "slug": "rider-ready-stance",
+   "name": "Rider ready stance",
+   "profile": "humanoid_v1",
+   "category": "action",
+   "difficulty": "medium",
+   "description": "A low, wide fighting stance. The lead fist guards the body, the rear hand rises open and ready.",
+   "image": {
+    "title": "Ichigo",
+    "creator": "Fuyoh!",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/7747793@N08/2510857921",
+    "file": "design/img/rider-stance.jpg"
+   }
+  },
+  {
+   "slug": "fencing-lunge",
+   "name": "Fencing lunge",
+   "profile": "humanoid_v1",
+   "category": "cinematic",
+   "difficulty": "hard",
+   "description": "A long forward lunge with the weapon arm reaching out.",
+   "image": {
+    "title": "Revoltech Skeleton",
+    "creator": "Marco Hazard",
+    "license": "CC BY-SA 2.0",
+    "source": "https://www.flickr.com/photos/42405591@N02/20980149636",
+    "file": "design/img/skeleton-lunge.jpg"
+   }
+  },
+  {
+   "slug": "shield-guard",
+   "name": "Shield guard",
+   "profile": "humanoid_v1",
+   "category": "display",
+   "difficulty": "easy",
+   "description": "Shield raised across the chest, weapon held low and ready.",
+   "image": {
+    "title": "366 Toy Project (Take 2) Day 21 / 366 - Heroic Age Captain America",
+    "creator": "Lunchbox Photography",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/15066420@N00/7016143189",
+    "file": "design/img/shield-guard.jpg"
+   }
+  },
+  {
+   "slug": "overhead-blade",
+   "name": "Overhead blade",
+   "profile": "humanoid_v1",
+   "category": "action",
+   "difficulty": "medium",
+   "description": "Weapon raised high behind the head, free fist clenched, about to strike.",
+   "image": {
+    "title": "Marvel Legends Ares",
+    "creator": "Hannaford",
+    "license": "CC BY-SA 2.0",
+    "source": "https://www.flickr.com/photos/27745117@N00/40591015670",
+    "url": "https://live.staticflickr.com/882/40591015670_ae6aea9f1d_b.jpg"
+   }
+  },
+  {
+   "slug": "shield-stride",
+   "name": "Shield stride",
+   "profile": "humanoid_v1",
+   "category": "display",
+   "difficulty": "easy",
+   "description": "Standing tall mid-stride, shield arm out to the side.",
+   "image": {
+    "title": "Marvel Legends Klaw",
+    "creator": "Hannaford",
+    "license": "CC BY-SA 2.0",
+    "source": "https://www.flickr.com/photos/27745117@N00/25218024927",
+    "url": "https://live.staticflickr.com/4663/25218024927_c5940fc64f_b.jpg"
+   }
+  },
+  {
+   "slug": "kneeling-aim",
+   "name": "Kneeling aim",
+   "profile": "humanoid_v1",
+   "category": "cinematic",
+   "difficulty": "hard",
+   "description": "Down on one knee, pistol arm stretched out toward the target.",
+   "image": {
+    "title": "Star Wars Black Series - Like Father And Son",
+    "creator": "Marco Hazard",
+    "license": "CC BY-SA 2.0",
+    "source": "https://www.flickr.com/photos/42405591@N02/24997910526",
+    "url": "https://live.staticflickr.com/1717/24997910526_d64b23f99e_b.jpg"
+   }
+  },
+  {
+   "slug": "brawler-guard",
+   "name": "Brawler guard",
+   "profile": "humanoid_v1",
+   "category": "action",
+   "difficulty": "medium",
+   "description": "Wide stance, one fist forward, the other pulled back at the hip.",
+   "image": {
+    "title": "Mr. Freeze vs. Hamlet (147/365)",
+    "creator": "JD Hancock",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/83346641@N00/4646198313",
+    "url": "https://live.staticflickr.com/4043/4646198313_6c3e4a1f08_b.jpg",
+    "crop": [
+     0.08,
+     0.1,
+     0.5,
+     1.0
+    ]
+   }
+  },
+  {
+   "slug": "stop-hand",
+   "name": "Stop hand",
+   "profile": "humanoid_v1",
+   "category": "display",
+   "difficulty": "easy",
+   "description": "Feet apart, one arm thrust forward with an open palm, cape flowing.",
+   "image": {
+    "title": "Superman Extreme",
+    "creator": "JD Hancock",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/83346641@N00/8936268978",
+    "url": "https://live.staticflickr.com/7401/8936268978_03f66d561d_b.jpg",
+    "crop": [
+     0.52,
+     0.08,
+     1.0,
+     1.0
+    ]
+   }
+  },
+  {
+   "slug": "crouched-ready",
+   "name": "Crouched ready",
+   "profile": "humanoid_v1",
+   "category": "action",
+   "difficulty": "medium",
+   "description": "Knees bent low, arms out and fists down, ready to spring.",
+   "image": {
+    "title": "Robin Extreme",
+    "creator": "JD Hancock",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/83346641@N00/8947783008",
+    "url": "https://live.staticflickr.com/5450/8947783008_f912eb4b3f_b.jpg",
+    "crop": [
+     0.57,
+     0.12,
+     0.95,
+     1.0
+    ]
+   }
+  },
+  {
+   "slug": "victory-dance",
+   "name": "Victory dance",
+   "profile": "humanoid_v1",
+   "category": "calm",
+   "difficulty": "hard",
+   "description": "One fist pumped high, one knee kicked up: a dance on one leg.",
+   "image": {
+    "title": "Career-Limiting Move",
+    "creator": "JD Hancock",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/83346641@N00/3591682866",
+    "url": "https://live.staticflickr.com/3311/3591682866_83f143c7a0_b.jpg",
+    "crop": [
+     0.38,
+     0.05,
+     0.85,
+     0.94
+    ]
+   }
+  },
+  {
+   "slug": "ledge-lookout",
+   "name": "Ledge lookout",
+   "profile": "anime_v1",
+   "category": "calm",
+   "difficulty": "easy",
+   "description": "Standing on a ledge, cape back, eyes on the horizon.",
+   "image": {
+    "title": "Levi",
+    "creator": "JoeFreedomChan",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/126729337@N03/15759305548",
+    "file": "design/img/levi-ledge.jpg"
+   }
+  },
+  {
+   "slug": "sword-draw",
+   "name": "Sword draw",
+   "profile": "anime_v1",
+   "category": "cinematic",
+   "difficulty": "hard",
+   "description": "Weight forward, hand on the hilt, blade just leaving the sheath.",
+   "image": {
+    "title": "Claymore",
+    "creator": "pasukaru76",
+    "license": "CC0 1.0",
+    "source": "https://www.flickr.com/photos/38451115@N04/11197195073",
+    "file": "design/img/claymore-draw.jpg"
+   }
+  },
+  {
+   "slug": "blade-raise",
+   "name": "Blade raise",
+   "profile": "anime_v1",
+   "category": "action",
+   "difficulty": "medium",
+   "description": "Jumping with the sword held high, knees tucked.",
+   "image": {
+    "title": "Ryukendo",
+    "creator": "Fuyoh!",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/7747793@N08/1148859449",
+    "file": "design/img/knight-sword.jpg"
+   }
+  },
+  {
+   "slug": "reclining-rest",
+   "name": "Reclining rest",
+   "profile": "anime_v1",
+   "category": "calm",
+   "difficulty": "medium",
+   "description": "Sitting back on one hand, one knee up, relaxed.",
+   "image": {
+    "title": "Evangelion Figures 2",
+    "creator": "ranmanekineko",
+    "license": "CC BY-SA 2.0",
+    "source": "https://www.flickr.com/photos/37865518@N00/2669714142",
+    "url": "https://live.staticflickr.com/3288/2669714142_1f731023b0.jpg"
+   }
+  },
+  {
+   "slug": "shy-glance",
+   "name": "Shy glance",
+   "profile": "anime_v1",
+   "category": "calm",
+   "difficulty": "easy",
+   "description": "Weight on one leg, hand raised to the chin, looking aside.",
+   "image": {
+    "title": "Nozomi",
+    "creator": "reggiepen",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/42438962@N05/24717676334",
+    "url": "https://live.staticflickr.com/1449/24717676334_16dfdafba6_b.jpg"
+   }
+  },
+  {
+   "slug": "hunter-stance",
+   "name": "Hunter stance",
+   "profile": "anime_v1",
+   "category": "display",
+   "difficulty": "easy",
+   "description": "Standing straight, blaster held down at the side.",
+   "image": {
+    "title": "Samus Aran figures",
+    "creator": "Danny Choo",
+    "license": "CC BY-SA 2.0",
+    "source": "https://www.flickr.com/photos/88444437@N00/6754828855",
+    "url": "https://live.staticflickr.com/7173/6754828855_41b4e91eda.jpg"
+   }
+  },
+  {
+   "slug": "blade-swing",
+   "name": "Blade swing",
+   "profile": "anime_v1",
+   "category": "action",
+   "difficulty": "hard",
+   "description": "Leaning into a wide sword swing, coat flaring.",
+   "image": {
+    "title": "BLK Figma",
+    "creator": "Danny Choo",
+    "license": "CC BY-SA 2.0",
+    "source": "https://www.flickr.com/photos/88444437@N00/6085921082",
+    "url": "https://live.staticflickr.com/6085/6085921082_5e923e6932_b.jpg"
+   }
+  },
+  {
+   "slug": "cheerful-wave",
+   "name": "Cheerful wave",
+   "profile": "anime_v1",
+   "category": "calm",
+   "difficulty": "easy",
+   "description": "Standing tall with one hand raised in a wave.",
+   "image": {
+    "title": "Figma Mirai Pre-order",
+    "creator": "Danny Choo",
+    "license": "CC BY-SA 2.0",
+    "source": "https://www.flickr.com/photos/88444437@N00/5164188677",
+    "url": "https://live.staticflickr.com/4090/5164188677_2d53e4dba0.jpg"
+   }
+  },
+  {
+   "slug": "commander-stance",
+   "name": "Commander stance",
+   "profile": "mecha_v1",
+   "category": "display",
+   "difficulty": "easy",
+   "description": "Wide planted legs, one fist raised toward the camera.",
+   "image": {
+    "title": "Revoltech 019 Optimus Prime",
+    "creator": "jquiz",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/76671243@N00/543625766",
+    "file": "design/img/optimus-stance.jpg"
+   }
+  },
+  {
+   "slug": "rifle-aim",
+   "name": "Rifle aim",
+   "profile": "mecha_v1",
+   "category": "cinematic",
+   "difficulty": "medium",
+   "description": "Rifle shouldered and aimed past the camera. Check that shoulder armor clears the arm.",
+   "image": {
+    "title": "BANDAI GUNPLA",
+    "creator": "othree",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/12452841@N00/9486175920",
+    "file": "design/img/sinanju-rifle.jpg"
+   }
+  },
+  {
+   "slug": "boost-dash",
+   "name": "Boost dash",
+   "profile": "mecha_v1",
+   "category": "action",
+   "difficulty": "medium",
+   "description": "Thrusting forward through the air, rifle out, legs trailing.",
+   "image": {
+    "title": "RG Gundam GP01 Fb Full BurnerN",
+    "creator": "The Magic Tuba Pixie",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/34017082@N06/13052375705",
+    "file": "design/img/gundam-boost.jpg"
+   }
+  },
+  {
+   "slug": "wing-spread",
+   "name": "Wing spread",
+   "profile": "mecha_v1",
+   "category": "display",
+   "difficulty": "easy",
+   "description": "Standing tall, arms slightly out, wings fully open.",
+   "image": {
+    "title": "BANDAI GUNPLA",
+    "creator": "othree",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/12452841@N00/9483375343",
+    "url": "https://live.staticflickr.com/7304/9483375343_4e502239c1_b.jpg"
+   }
+  },
+  {
+   "slug": "sword-ready",
+   "name": "Sword ready",
+   "profile": "mecha_v1",
+   "category": "action",
+   "difficulty": "medium",
+   "description": "Low stance, sword held out to the side, wings swept back.",
+   "image": {
+    "title": "BANDAI GUNPLA",
+    "creator": "othree",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/12452841@N00/9483375227",
+    "url": "https://live.staticflickr.com/2849/9483375227_76cd1c71cc_b.jpg"
+   }
+  },
+  {
+   "slug": "forward-punch",
+   "name": "Forward punch",
+   "profile": "mecha_v1",
+   "category": "action",
+   "difficulty": "medium",
+   "description": "Stepping in with one fist driven forward.",
+   "image": {
+    "title": "BANDAI GUNPLA",
+    "creator": "othree",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/12452841@N00/9483374901",
+    "url": "https://live.staticflickr.com/3722/9483374901_f0cf3e607b_b.jpg"
+   }
+  },
+  {
+   "slug": "shadow-guard",
+   "name": "Shadow guard",
+   "profile": "mecha_v1",
+   "category": "cinematic",
+   "difficulty": "medium",
+   "description": "Arms crossed in front, wings angled down like a cloak.",
+   "image": {
+    "title": "BANDAI GUNPLA",
+    "creator": "othree",
+    "license": "CC BY 2.0",
+    "source": "https://www.flickr.com/photos/12452841@N00/9483375443",
+    "url": "https://live.staticflickr.com/7320/9483375443_9ff459eac3_b.jpg"
+   }
+  }
+ ]
+}
