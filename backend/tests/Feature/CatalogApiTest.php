@@ -28,7 +28,7 @@ class CatalogApiTest extends TestCase
 
     public function test_browses_and_filters_the_pose_catalog(): void
     {
-        $this->getJson('/api/v1/poses')->assertOk()->assertJsonPath('meta.total', PoseCatalog::count());
+        $this->getJson('/api/v1/poses')->assertOk()->assertJsonPath('meta.total', PoseCatalog::published()->count());
 
         $mecha = $this->getJson('/api/v1/poses?profile=mecha_v1')->assertOk()->json('data');
         $this->assertNotEmpty($mecha);
