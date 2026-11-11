@@ -5,26 +5,185 @@
   "version": 1,
   "angle_convention": "Joint angle is the interior angle between the two connected segments, in degrees, measured in the 2D image plane. 180 means fully straight.",
   "keypoints": [
-    "head", "neck", "chest", "waist", "backpack",
-    "left_shoulder", "right_shoulder", "left_shoulder_armor", "right_shoulder_armor",
-    "left_elbow", "right_elbow", "left_wrist", "right_wrist",
-    "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"
+    "head",
+    "neck",
+    "chest",
+    "waist",
+    "backpack",
+    "left_shoulder",
+    "right_shoulder",
+    "left_shoulder_armor",
+    "right_shoulder_armor",
+    "left_elbow",
+    "right_elbow",
+    "left_wrist",
+    "right_wrist",
+    "left_hip",
+    "right_hip",
+    "left_knee",
+    "right_knee",
+    "left_ankle",
+    "right_ankle"
   ],
   "connections": [
-    ["head", "neck"], ["neck", "chest"], ["chest", "waist"], ["chest", "backpack"],
-    ["neck", "left_shoulder"], ["neck", "right_shoulder"],
-    ["left_shoulder", "left_shoulder_armor"], ["right_shoulder", "right_shoulder_armor"],
-    ["left_shoulder", "left_elbow"], ["left_elbow", "left_wrist"],
-    ["right_shoulder", "right_elbow"], ["right_elbow", "right_wrist"],
-    ["waist", "left_hip"], ["waist", "right_hip"], ["left_hip", "right_hip"],
-    ["left_hip", "left_knee"], ["left_knee", "left_ankle"],
-    ["right_hip", "right_knee"], ["right_knee", "right_ankle"]
+    [
+      "head",
+      "neck"
+    ],
+    [
+      "neck",
+      "chest"
+    ],
+    [
+      "chest",
+      "waist"
+    ],
+    [
+      "chest",
+      "backpack"
+    ],
+    [
+      "neck",
+      "left_shoulder"
+    ],
+    [
+      "neck",
+      "right_shoulder"
+    ],
+    [
+      "left_shoulder",
+      "left_shoulder_armor"
+    ],
+    [
+      "right_shoulder",
+      "right_shoulder_armor"
+    ],
+    [
+      "left_shoulder",
+      "left_elbow"
+    ],
+    [
+      "left_elbow",
+      "left_wrist"
+    ],
+    [
+      "right_shoulder",
+      "right_elbow"
+    ],
+    [
+      "right_elbow",
+      "right_wrist"
+    ],
+    [
+      "waist",
+      "left_hip"
+    ],
+    [
+      "waist",
+      "right_hip"
+    ],
+    [
+      "left_hip",
+      "right_hip"
+    ],
+    [
+      "left_hip",
+      "left_knee"
+    ],
+    [
+      "left_knee",
+      "left_ankle"
+    ],
+    [
+      "right_hip",
+      "right_knee"
+    ],
+    [
+      "right_knee",
+      "right_ankle"
+    ]
   ],
   "notes": "Mecha kits often have shoulder armor and backpacks that block the arms. Treat armor and backpack as landmarks, not joints.",
   "joints": {
-    "left_elbow":  {"segments": ["left_shoulder", "left_elbow", "left_wrist"],  "min": 30, "max": 180, "source": "estimated"},
-    "right_elbow": {"segments": ["right_shoulder", "right_elbow", "right_wrist"], "min": 30, "max": 180, "source": "estimated"},
-    "left_knee":   {"segments": ["left_hip", "left_knee", "left_ankle"],       "min": 30, "max": 180, "source": "estimated"},
-    "right_knee":  {"segments": ["right_hip", "right_knee", "right_ankle"],    "min": 30, "max": 180, "source": "estimated"}
+    "left_shoulder": {
+      "segments": [
+        "left_hip",
+        "left_shoulder",
+        "left_elbow"
+      ],
+      "min": 0,
+      "max": 180,
+      "source": "estimated"
+    },
+    "right_shoulder": {
+      "segments": [
+        "right_hip",
+        "right_shoulder",
+        "right_elbow"
+      ],
+      "min": 0,
+      "max": 180,
+      "source": "estimated"
+    },
+    "left_elbow": {
+      "segments": [
+        "left_shoulder",
+        "left_elbow",
+        "left_wrist"
+      ],
+      "min": 30,
+      "max": 180,
+      "source": "estimated"
+    },
+    "right_elbow": {
+      "segments": [
+        "right_shoulder",
+        "right_elbow",
+        "right_wrist"
+      ],
+      "min": 30,
+      "max": 180,
+      "source": "estimated"
+    },
+    "left_hip": {
+      "segments": [
+        "left_shoulder",
+        "left_hip",
+        "left_knee"
+      ],
+      "min": 75,
+      "max": 180,
+      "source": "estimated"
+    },
+    "right_hip": {
+      "segments": [
+        "right_shoulder",
+        "right_hip",
+        "right_knee"
+      ],
+      "min": 75,
+      "max": 180,
+      "source": "estimated"
+    },
+    "left_knee": {
+      "segments": [
+        "left_hip",
+        "left_knee",
+        "left_ankle"
+      ],
+      "min": 30,
+      "max": 180,
+      "source": "estimated"
+    },
+    "right_knee": {
+      "segments": [
+        "right_hip",
+        "right_knee",
+        "right_ankle"
+      ],
+      "min": 30,
+      "max": 180,
+      "source": "estimated"
+    }
   }
 }
