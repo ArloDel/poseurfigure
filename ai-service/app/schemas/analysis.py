@@ -100,6 +100,8 @@ class RecommendRequest(BaseModel):
     # Known limits of the user's own figure (PRD 8.5). Overrides the profile's estimates.
     figure_limits: dict[str, JointLimit] = {}
     top_k: int = 5
+    # Poses already shown to the user, for "show different poses" (REC-07).
+    exclude_ids: list[int] = []
 
 
 class Recommendation(BaseModel):
@@ -111,12 +113,20 @@ class Recommendation(BaseModel):
     shared_joints: int
     mirrored: bool
     warnings: list[dict]
+    # Why this pose is in the list, for the app's copy: close_to_current, new_direction, mirror,
+    # different_category, check_joints.
+    reasons: list[str] = []
 
 
 class RecommendResponse(BaseModel):
     matcher_version: str
     profile: str
+    # "pose": ranked against the user's figure. "type_only": the pose couldn't be read, so these are
+    # varied poses for the figure type, not matches.
+    basis: Literal["pose", "type_only"] = "pose"
     results: list[Recommendation]
+    # Candidates not shown yet; 0 means "show different poses" has nothing new.
+    remaining: int = 0
 
 
 class SkeletonProfile(BaseModel):
