@@ -7,9 +7,11 @@ use App\Enums\AnalysisStatus;
 use App\Models\Analysis;
 use App\Models\FigureProfile;
 use App\Services\AIService;
+use App\Services\RecommendationService;
 use App\Services\StorageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -32,7 +34,7 @@ class ProcessFigureAnalysis implements ShouldQueue
         return [5, 15, 30];
     }
 
-    public function handle(AIService $ai, StorageService $storage): void
+    public function handle(AIService $ai, StorageService $storage, RecommendationService $recommendations): void
     {
         $analysis = Analysis::with('profile')->find($this->analysisId);
 
@@ -73,6 +75,20 @@ class ProcessFigureAnalysis implements ShouldQueue
 
         $profileSlug = $result['classification']['profile'] ?? null;
 
+        // Rank catalog poses before marking the analysis done, so the app never sees "completed"
+        // without recommendations. If ranking fails, the job throws and the queue retries it.
+        $rows = $profileSlug && isset($result['pose'])
+            ? $recommendations->rank($analysis, $result['pose'], $profileSlug)
+            : [];
+
+        DB::transaction(function () use ($analysis, $result, $quality, $profileSlug, $rows, $recommendations) {
+            $this->complete($analysis, $result, $quality, $profileSlug);
+            $recommendations->replace($analysis, $rows);
+        });
+    }
+
+    private function complete(Analysis $analysis, array $result, array $quality, ?string $profileSlug): void
+    {
         $analysis->update([
             'status' => AnalysisStatus::Completed,
             'quality' => $quality,
