@@ -53,21 +53,27 @@ class RecommendationTest extends TestCase
         ];
     }
 
-    /** Fake matcher: ranks whatever candidates it receives in reverse id order, with one mirrored warning. */
-    private function fakeAi(?array &$sent = null): void
+    /**
+     * Fake matcher: honors exclude_ids, ranks the rest in reverse id order, flags the first as mirrored
+     * with a joint warning, and reports $basis and how many candidates are left.
+     */
+    private function fakeAi(?array &$sent = null, string $basis = 'pose'): void
     {
         Http::fake([
             '*/v1/analyze' => Http::response($this->analyzeResponse()),
-            '*/v1/recommend' => function ($request) use (&$sent) {
+            '*/v1/recommend' => function ($request) use (&$sent, $basis) {
                 $sent = $request->data();
-                $ids = array_reverse(array_column($sent['candidates'], 'id'));
+                $pool = array_values(array_diff(array_column($sent['candidates'], 'id'), $sent['exclude_ids'] ?? []));
+                $ids = array_slice(array_reverse($pool), 0, $sent['top_k']);
 
-                return Http::response(['matcher_version' => 'match-0.1', 'profile' => $sent['profile'], 'results' => array_map(
-                    fn ($id, $i) => ['id' => $id, 'score' => 0.9 - $i / 10, 'similarity' => 0.8, 'feasibility' => $i === 0 ? 0.7 : 1.0,
+                return Http::response(['matcher_version' => 'match-0.2', 'profile' => $sent['profile'], 'basis' => $basis,
+                    'remaining' => count($pool) - count($ids),
+                    'results' => array_map(fn ($id, $i) => [
+                        'id' => $id, 'score' => 0.9 - $i / 10, 'similarity' => 0.8, 'feasibility' => $i === 0 ? 0.7 : 1.0,
                         'components' => ['angle' => 0.8], 'shared_joints' => 12, 'mirrored' => $i === 0,
-                        'warnings' => $i === 0 ? [['joint' => 'left_elbow', 'target' => 20, 'limit' => 35, 'beyond_by' => 15, 'limit_source' => 'estimated']] : []],
-                    array_slice($ids, 0, $sent['top_k']), array_keys(array_slice($ids, 0, $sent['top_k'])),
-                )]);
+                        'reasons' => $i === 0 ? ['mirror', 'check_joints'] : ['different_category'],
+                        'warnings' => $i === 0 ? [['joint' => 'left_elbow', 'target' => 20, 'limit' => 35, 'beyond_by' => 15, 'limit_source' => 'estimated']] : [],
+                    ], $ids, array_keys($ids))]);
             },
         ]);
     }
@@ -159,5 +165,58 @@ class RecommendationTest extends TestCase
         $after = $analysis->recommendations()->pluck('id')->all();
         $this->assertCount(5, $after);
         $this->assertEmpty(array_intersect($before, $after));
+    }
+
+    public function test_recommendations_carry_reasons_basis_and_whether_more_exist(): void
+    {
+        $this->fakeAi($sent);
+        $analysis = $this->run_job($this->analysis());
+
+        $this->withHeader('X-Guest-Key', $this->guestKey)->getJson("/api/v1/analyses/{$analysis->public_id}")
+            ->assertJsonPath('data.recommendation_basis', 'pose')
+            ->assertJsonPath('data.more_recommendations', true)
+            ->assertJsonPath('data.recommendations.0.reasons', ['mirror', 'check_joints']);
+    }
+
+    public function test_show_different_poses_until_the_catalog_runs_out(): void
+    {
+        $this->fakeAi($sent);
+        $analysis = $this->run_job($this->analysis());
+        $first = $analysis->recommendations()->pluck('pose_catalog_id')->all();
+        $total = PoseCatalog::published()->whereHas('profile', fn ($q) => $q->where('slug', 'humanoid_v1'))->count();
+        $url = "/api/v1/analyses/{$analysis->public_id}/recommendations";
+
+        $second = $this->withHeader('X-Guest-Key', $this->guestKey)->postJson($url)
+            ->assertOk()->assertJsonPath('message', 'Here are different poses');
+        $secondIds = array_column(array_column($second->json('data.recommendations'), 'pose'), 'id');
+
+        $this->assertSame($first, $sent['exclude_ids']);
+        $this->assertEmpty(array_intersect($first, $secondIds));
+        $this->assertCount($total - count($first), $secondIds);
+        $second->assertJsonPath('data.more_recommendations', false);
+
+        // Everything shown: the list stays as it is and the app is told so.
+        $this->withHeader('X-Guest-Key', $this->guestKey)->postJson($url)
+            ->assertOk()
+            ->assertJsonPath('message', "You've seen every pose we have for this figure type");
+        $this->assertEqualsCanonicalizing($secondIds, $analysis->recommendations()->pluck('pose_catalog_id')->all());
+    }
+
+    public function test_unreadable_pose_is_reported_as_type_only(): void
+    {
+        $this->fakeAi($sent, basis: 'type_only');
+        $analysis = $this->run_job($this->analysis());
+
+        $this->withHeader('X-Guest-Key', $this->guestKey)->getJson("/api/v1/analyses/{$analysis->public_id}")
+            ->assertJsonPath('data.recommendation_basis', 'type_only');
+    }
+
+    public function test_show_different_needs_ownership_and_a_finished_analysis(): void
+    {
+        $pending = $this->analysis();
+        $url = "/api/v1/analyses/{$pending->public_id}/recommendations";
+
+        $this->withHeader('X-Guest-Key', (string) Str::uuid())->postJson($url)->assertNotFound();
+        $this->withHeader('X-Guest-Key', $this->guestKey)->postJson($url)->assertStatus(409);
     }
 }
