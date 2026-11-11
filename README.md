@@ -10,7 +10,7 @@ figurepose/
 ├── mobile/          Flutter app (Android, iOS, web, Windows)
 ├── backend/         Laravel 13 REST API + queue worker
 ├── ai-service/      Python FastAPI: photo checks, figure detection, type and keypoints
-├── shared/          Skeleton profiles read by both backend and AI service
+├── shared/          Skeleton profiles and the generated pose catalog, read by backend and AI service
 ├── infrastructure/  Postgres init SQL (nginx/ and docker/ reserved for later)
 ├── design/          Clickable UI prototype and stand-in photos (CC-licensed)
 ├── docs/            PRD
@@ -218,7 +218,36 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] App shows the figure type, joints found, hidden joints and angles, with the skeleton drawn on the photo
 - [x] Runs on CPU in Docker, one inference at a time, about 10 s per photo
 
-Not yet built (later sprints): pose matching and recommendations, AI image generation, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset).
+## Sprint 5 status
+
+- [x] Pose catalog of 25 poses from CC-licensed photos, keypoints extracted with the same models as user photos; 20 pass the quality gate (9 humanoid, 8 anime, 3 mecha)
+- [x] Instructions and joint-limit warnings generated from each pose's angles; shoulder and hip limits added to the profiles
+- [x] Matching per PRD 8.4 (angle 40%, position 35%, embedding 25%), mirrored poses recognized, feasibility against profile or figure limits
+- [x] `POST /v1/recommend` in the AI service; the backend stores the top 5 per analysis before marking it completed
+- [x] Matching evaluation with a baseline report
+
+Not yet built (later sprints): recommendation screen in the app, diversity in ranking, AI image generation, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset).
+
+## Pose catalog and matching
+
+The catalog's source of truth is `ai-service/catalog/manifest.json` (photo, crop, name, type, category, difficulty, credit). Rebuild it with:
+
+```bash
+cd ai-service && python -m catalog.build
+```
+
+That downloads and crops the photos into `backend/public/catalog/`, extracts keypoints, angles, instructions and limit warnings, and writes `shared/catalog/poses.json`. A pose is published only if its neck and both hips and at least 10 joints are visible. Then reseed: `docker compose exec api php artisan db:seed --class=PoseCatalogSeeder --force`.
+
+Recommendations are ranked by `0.7 × similarity + 0.3 × feasibility`. Baseline (full report: [ai-service/reports/match_v1.md](ai-service/reports/match_v1.md)):
+
+| Measure | Result |
+|---|---|
+| Catalog photo reframed or mirrored, found at rank 1 | 19/20 each (top 3: 20/20) |
+| Mirrored photo flagged as mirrored | 19/20 |
+| Same top pose from labeled vs predicted keypoints | 8/18 (top-5 overlap 72%) |
+| Matching time | ~6 ms for one pose against a profile's catalog |
+
+Known limits: the catalog is small (only 3 mecha poses, since the pose model struggles with winged or flying mecha). Rankings are sensitive to keypoint errors because many poses score close together. When a figure's torso isn't readable, every pose scores 0.5 and the order means nothing; Sprint 6 should say so in the app instead of ranking. Five catalog photos are also eval_v1 photos.
 
 ## AI models and evaluation
 
