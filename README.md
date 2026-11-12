@@ -139,6 +139,7 @@ Access: **open** needs nothing, **owner** needs a bearer token or `X-Guest-Key`,
 | GET | `/analyses` | owner | History, newest first |
 | GET | `/analyses/{analysis_id}` | owner | Status, quality report, errors |
 | DELETE | `/analyses/{analysis_id}` | owner | Deletes the analysis and the stored photo |
+| POST | `/analyses/{analysis_id}/recommendations` | owner | Show different poses: replaces the list with poses not shown yet |
 | POST | `/analyses/{analysis_id}/profile` | owner | `figure_profile_id`. The user confirms or corrects the figure type; the photo is analyzed again with it |
 | GET | `/favorites` | account | Saved catalog poses |
 | POST | `/favorites` | account | `pose_id`. Saving twice keeps one favorite |
@@ -226,7 +227,16 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] `POST /v1/recommend` in the AI service; the backend stores the top 5 per analysis before marking it completed
 - [x] Matching evaluation with a baseline report
 
-Not yet built (later sprints): recommendation screen in the app, diversity in ranking, AI image generation, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset).
+## Sprint 6 status
+
+- [x] Hybrid ranking v2: similarity in bands, near-duplicate suppression, variety across poses and categories (MMR)
+- [x] Honest fallback: when the figure's pose can't be read, recommendations are marked `type_only` and shown without match scores
+- [x] Every pick says why: close to your pose, a few changes, new direction, mirror it, something different, check joints
+- [x] Show different poses (REC-07), until the catalog for the figure type runs out
+- [x] App shows the recommendations after analysis, with match and hold meters, reason chips and a mirror note on the pose detail
+- [x] Ranking evaluation comparing v1 and v2
+
+Not yet built (later sprints): AI image generation, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset), a larger catalog (especially mecha).
 
 ## Pose catalog and matching
 
@@ -238,7 +248,9 @@ cd ai-service && python -m catalog.build
 
 That downloads and crops the photos into `backend/public/catalog/`, extracts keypoints, angles, instructions and limit warnings, and writes `shared/catalog/poses.json`. A pose is published only if its neck and both hips and at least 10 joints are visible. Then reseed: `docker compose exec api php artisan db:seed --class=PoseCatalogSeeder --force`.
 
-Recommendations are ranked by `0.7 × similarity + 0.3 × feasibility`. Baseline (full report: [ai-service/reports/match_v1.md](ai-service/reports/match_v1.md)):
+Sprint 5 ranked recommendations by `0.7 × similarity + 0.3 × feasibility`. Sprint 6 (v2, `match-0.2`) keeps that score but rounds similarity into 0.05 bands, breaks ties on feasibility and difficulty, and picks one pose at a time so each new pick differs from the ones before (near-identical poses go last). Comparison on eval_v1 ([ai-service/reports/ranking_v2.md](ai-service/reports/ranking_v2.md)): same first pose from labeled vs predicted keypoints 44% → 56%, categories in the top 5 3.1 → 3.9, lists with a near-duplicate 6/18 → 0/18.
+
+Sprint 5 baseline: Baseline (full report: [ai-service/reports/match_v1.md](ai-service/reports/match_v1.md)):
 
 | Measure | Result |
 |---|---|
@@ -247,7 +259,7 @@ Recommendations are ranked by `0.7 × similarity + 0.3 × feasibility`. Baseline
 | Same top pose from labeled vs predicted keypoints | 8/18 (top-5 overlap 72%) |
 | Matching time | ~6 ms for one pose against a profile's catalog |
 
-Known limits: the catalog is small (only 3 mecha poses, since the pose model struggles with winged or flying mecha). Rankings are sensitive to keypoint errors because many poses score close together. When a figure's torso isn't readable, every pose scores 0.5 and the order means nothing; Sprint 6 should say so in the app instead of ranking. Five catalog photos are also eval_v1 photos.
+Known limits: the catalog is small (only 3 mecha poses, since the pose model struggles with winged or flying mecha). Rankings are sensitive to keypoint errors because many poses score close together. When a figure's torso isn't readable the ranking falls back to `type_only` (Sprint 6) and the app says so. Five catalog photos are also eval_v1 photos.
 
 ## AI models and evaluation
 
