@@ -135,6 +135,21 @@ class FakeAnalysisRepository implements AnalysisRepository {
 
   final confirmed = <(String, int)>[];
 
+  final showDifferentCalls = <String>[];
+
+  /// Next page of poses for "show different"; empty means everything was shown.
+  List<Map<String, dynamic>> nextRecommendations = [];
+
+  @override
+  Future<(Analysis, String)> showDifferent(String id) async {
+    showDifferentCalls.add(id);
+    final i = items.indexWhere((a) => a.id == id);
+    if (nextRecommendations.isEmpty) return (items[i], "You've seen every pose we have for this figure type");
+    items[i] = analysisResult(id, recommendations: nextRecommendations, more: false);
+    nextRecommendations = [];
+    return (items[i], 'Here are different poses');
+  }
+
   @override
   Future<Map<String, int>> profileIds() async => {'humanoid_v1': 1, 'anime_v1': 2, 'mecha_v1': 3};
 
@@ -148,7 +163,21 @@ class FakeAnalysisRepository implements AnalysisRepository {
 }
 
 /// A completed analysis as the API returns it.
-Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confidence = 0.9, bool needsConfirmation = false, bool byUser = false}) {
+/// A recommendation as the API returns it, for the sample poses (1 = Rider ready stance, 2 = Rifle aim).
+Map<String, dynamic> recJson(int rank, int poseId, {bool mirrored = false, List<String> reasons = const [], bool warn = false}) {
+  final p = poseId == 1
+      ? {'id': 1, 'slug': 'rider-ready-stance', 'name': 'Rider ready stance', 'category': 'action', 'difficulty': 'medium', 'profile': 'humanoid_v1'}
+      : {'id': 2, 'slug': 'rifle-aim', 'name': 'Rifle aim', 'category': 'cinematic', 'difficulty': 'medium', 'profile': 'humanoid_v1'};
+  return {
+    'rank': rank, 'score': 0.9, 'similarity_score': 0.86, 'feasibility_score': warn ? 0.7 : 1.0, 'mirrored': mirrored,
+    'reasons': reasons,
+    'warnings': warn ? [{'joint': 'left_elbow', 'target': 20, 'limit': 35}] : [],
+    'pose': p,
+  };
+}
+
+Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confidence = 0.9, bool needsConfirmation = false,
+    bool byUser = false, List<Map<String, dynamic>> recommendations = const [], bool typeOnly = false, bool more = true}) {
   Map<String, dynamic> kp(double x, double y, [String vis = 'visible']) => {'x': x, 'y': y, 'confidence': 0.9, 'visibility': vis};
   return Analysis.fromJson({
     'analysis_id': id,
@@ -157,6 +186,9 @@ Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confi
     'created_at': DateTime.now().toIso8601String(),
     'image': {'width': 900, 'height': 1200},
     'figures': [{'bbox': [0.2, 0.1, 0.8, 0.95], 'score': 0.7}],
+    'recommendations': recommendations,
+    'recommendation_basis': typeOnly ? 'type_only' : 'pose',
+    'more_recommendations': more,
     'classification': {'profile': profile, 'confidence': byUser ? 1.0 : confidence, 'needs_confirmation': needsConfirmation,
       'source': byUser ? 'user' : 'model'},
     'pose': {
