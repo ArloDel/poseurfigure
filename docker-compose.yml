@@ -26,6 +26,8 @@ x-backend-env: &backend-env
   AI_SERVICE_TIMEOUT: "60"
   SKELETON_PROFILES_PATH: /shared/skeleton_profiles
   CATALOG_PATH: /shared/catalog/poses.json
+  # AI visuals: on for development with the stub provider (see ai service). Turn off without a real provider in production.
+  GENERATION_ENABLED: "true"
 
 services:
   api:
@@ -70,6 +72,9 @@ services:
     environment:
       # Load the models at startup, so the first analysis isn't slow. First start downloads ~1.3 GB.
       AI_WARMUP: "true"
+      # Development stand-in for an image service: returns the original photo, nothing leaves this machine.
+      # A real provider is added in ai-service/app/services/image_generator.py; its API key goes in .env.
+      AI_GENERATION_PROVIDER: stub
     volumes:
       - ./shared:/shared:ro
       - model_cache:/models
