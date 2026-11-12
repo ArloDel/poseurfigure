@@ -17,7 +17,8 @@ class GeneratePoseImage implements ShouldQueue
 {
     use Queueable;
 
-    public int $timeout = 120;
+    // Must stay below the queue's retry_after (90 s), or a slow job would be started a second time and billed twice.
+    public int $timeout = 80;
 
     // One retry only: every attempt may be billed by the image provider.
     public int $tries = 2;
