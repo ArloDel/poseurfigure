@@ -53,6 +53,16 @@ class AnalysisRepository {
     }
   }
 
+  /// "Show different poses" (REC-07). Returns the updated analysis and the server's message.
+  Future<(Analysis, String)> showDifferent(String id) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>('/analyses/$id/recommendations');
+      return (Analysis.fromJson(res.data!['data'] as Map<String, dynamic>), res.data!['message'] as String? ?? '');
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+  }
+
   /// Analyses of the signed-in user, or of this device for a guest, newest first.
   Future<List<Analysis>> history() async {
     try {
