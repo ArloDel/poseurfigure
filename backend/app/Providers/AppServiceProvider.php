@@ -26,6 +26,13 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // AI visuals cost money per image: tighter than uploads. A daily cap is enforced in GenerationService.
+        RateLimiter::for('generation', function (Request $request) {
+            $key = $request->user('sanctum')?->id ?? $request->header('X-Guest-Key') ?? $request->ip();
+
+            return Limit::perMinute(5)->by('generation:'.$key);
+        });
+
         // Uploads trigger AI work, so they are limited per user, guest device and IP.
         RateLimiter::for('analyses', function (Request $request) {
             $key = $request->user('sanctum')?->id ?? $request->header('X-Guest-Key') ?? $request->ip();

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\FigureController;
 use App\Http\Controllers\Api\FigureProfileController;
+use App\Http\Controllers\Api\GeneratedImageController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\PoseController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,13 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/poses', [PoseController::class, 'index']);
     Route::get('/poses/{pose}', [PoseController::class, 'show'])->whereNumber('pose');
+
+    // Optional AI visuals (guests too). The file route is reached through a signed, expiring link.
+    Route::post('/poses/{pose}/generate', [GeneratedImageController::class, 'store'])
+        ->whereNumber('pose')->middleware('throttle:generation');
+    Route::get('/generated-images/{generatedImage}', [GeneratedImageController::class, 'show'])->whereNumber('generatedImage');
+    Route::get('/generated-images/{generatedImage}/file', [GeneratedImageController::class, 'file'])
+        ->whereNumber('generatedImage')->middleware('signed')->name('generated-images.file');
 
     // Analyses work for guests too (X-Guest-Key), so they are not behind auth:sanctum.
     Route::post('/analyses', [AnalysisController::class, 'store'])->middleware('throttle:analyses');
