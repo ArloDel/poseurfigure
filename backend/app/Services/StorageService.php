@@ -25,6 +25,19 @@ class StorageService
         return ['disk' => $disk, 'path' => $path];
     }
 
+    /** @return array{disk: string, path: string} */
+    public function storeGenerated(string $bytes, string $name): array
+    {
+        $disk = config('figurepose.image_disk');
+        $path = 'generated/'.now()->format('Y/m')."/{$name}.jpg";
+
+        if (! Storage::disk($disk)->put($path, $bytes, ['visibility' => 'private'])) {
+            throw new RuntimeException('Could not store the generated image.');
+        }
+
+        return ['disk' => $disk, 'path' => $path];
+    }
+
     public function read(string $disk, string $path): string
     {
         $contents = Storage::disk($disk)->get($path);
