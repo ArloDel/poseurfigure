@@ -41,7 +41,7 @@ class AnalysisResource extends JsonResource
                     // The user's figure matches this pose with left and right swapped: "mirror it".
                     'mirrored' => (bool) ($r->details['mirrored'] ?? false),
                     'warnings' => $r->details['warnings'] ?? [],
-                    // close_to_current, new_direction, mirror, different_category, check_joints
+                    // close_to_current, few_changes, new_direction, mirror, different_category, check_joints
                     'reasons' => $r->details['reasons'] ?? [],
                     'pose' => (new PoseResource($r->pose))->resolve($request),
                 ])->all(),
