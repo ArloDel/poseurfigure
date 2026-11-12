@@ -140,6 +140,8 @@ Access: **open** needs nothing, **owner** needs a bearer token or `X-Guest-Key`,
 | GET | `/analyses/{analysis_id}` | owner | Status, quality report, errors |
 | DELETE | `/analyses/{analysis_id}` | owner | Deletes the analysis and the stored photo |
 | POST | `/analyses/{analysis_id}/recommendations` | owner | Show different poses: replaces the list with poses not shown yet |
+| POST | `/poses/{id}/generate` | owner | `analysis_id`, `consent: true`, optional `mirrored`. Starts an AI visual; repeating returns the same one |
+| GET | `/generated-images/{id}` | owner | Status (`pending`, `generated`, `failed`), validation (`validated`, `rejected`, `unvalidated`) and an expiring image link |
 | POST | `/analyses/{analysis_id}/profile` | owner | `figure_profile_id`. The user confirms or corrects the figure type; the photo is analyzed again with it |
 | GET | `/favorites` | account | Saved catalog poses |
 | POST | `/favorites` | account | `pose_id`. Saving twice keeps one favorite |
@@ -236,7 +238,27 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] App shows the recommendations after analysis, with match and hold meters, reason chips and a mirror note on the pose detail
 - [x] Ranking evaluation comparing v1 and v2
 
-Not yet built (later sprints): AI image generation, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset), a larger catalog (especially mecha).
+## Sprint 7 status
+
+- [x] AI visual flow end to end: consent, queued job, private storage, expiring signed link, cleanup with the analysis
+- [x] Every generated image is checked against the target pose and marked `validated` or `rejected`
+- [x] Images are always labelled AI-generated in the API and the app, apart from catalog references
+- [x] Limits: one visual per analysis + pose (repeats are free), 5 requests per minute, 10 new visuals per day
+- [x] Development stub provider, so nothing is billed and no photo leaves the machine
+- [ ] A real image provider: not connected yet (needs a provider choice and an API key)
+
+Not yet built (later sprints): a real image provider, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset), a larger catalog (especially mecha).
+
+## AI visuals
+
+Optional pictures of the user's own figure in a recommended pose (PRD 8.6). The catalog steps stay the dependable guidance; a visual is extra.
+
+- **Consent first.** The app shows what is sent and where; the API refuses without `consent: true` and records when consent was given.
+- **Validation.** The detector and pose model read the generated image. It is `validated` only if overall similarity to the target is at least 0.85 and no joint angle is off by more than 40°. The second rule matters: averages hide one wrong joint (a standing figure scores about 0.89 against a crouch). Validation means the picture shows the pose, not that the figure can hold it.
+- **Providers.** `AI_GENERATION_PROVIDER` in the AI service: `none` (feature off, default) or `stub` (development: returns the original photo with a banner). To connect a real service, add a class with `name` and `generate()` to `ai-service/app/services/image_generator.py`, register it in `PROVIDERS`, and put its API key in `.env`. Set `GENERATION_ENABLED=true` on the backend only when a provider is configured. Compose enables the stub for development.
+- **Backend settings.** `GENERATION_ENABLED` (false), `GENERATION_DAILY_LIMIT` (10), `GENERATION_URL_TTL_MINUTES` (15). AI service: `AI_VALIDATION_MIN_SIMILARITY` (0.85), `AI_VALIDATION_MAX_JOINT_ERROR` (40).
+
+With the stub, a visual for a pose the figure is already in comes back `validated`, and one for a different pose comes back `rejected`: the stub never changes the pose, and validation notices.
 
 ## Pose catalog and matching
 
