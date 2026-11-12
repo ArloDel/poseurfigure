@@ -1,4 +1,6 @@
 import asyncio
+import base64
+import io
 import logging
 import time
 import uuid
@@ -9,9 +11,13 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Upload
 from fastapi.concurrency import run_in_threadpool
 
 from app.config import Settings, get_settings
-from app.schemas.analysis import AnalyzeResponse, RecommendRequest, RecommendResponse, SkeletonProfile
+from app.schemas.analysis import (
+    AnalyzeResponse, GenerateRequest, GenerateResponse, RecommendRequest, RecommendResponse, SkeletonProfile,
+)
 from app.services.image_quality import UnreadableImage, assess, load_image
+from app.services.image_generator import ImageGenerator, build_generator, build_prompt, validate
 from app.services.pipeline import Pipeline
+from app.services.pose_matcher import mirror, to_view
 from app.services.recommender import rank
 from app.services.profiles import load_profiles
 
@@ -45,6 +51,10 @@ def build_pipeline() -> Pipeline:
 
 def get_pipeline() -> Pipeline | None:
     return build_pipeline() if get_settings().models_enabled else None
+
+
+def get_generator() -> ImageGenerator | None:
+    return build_generator(get_settings().generation_provider)
 
 
 @asynccontextmanager
@@ -81,7 +91,8 @@ async def request_id(request: Request, call_next):
 def health(settings: Settings = Depends(get_settings)) -> dict:
     profiles = load_profiles(settings.skeleton_profiles_path)
     return {"status": "ok", "service": settings.service_name, "version": settings.version,
-            "models_enabled": settings.models_enabled, "profiles": sorted(profiles)}
+            "models_enabled": settings.models_enabled, "generation_provider": settings.generation_provider,
+            "profiles": sorted(profiles)}
 
 
 @app.get("/v1/profiles")
@@ -96,6 +107,53 @@ def recommend_poses(request: RecommendRequest, settings: Settings = Depends(get_
     if request.profile not in known:
         raise HTTPException(422, f"Unknown profile '{request.profile}'. Known: {', '.join(sorted(known))}.")
     return rank(request, known[request.profile])
+
+
+@app.post("/v1/generate")
+async def generate_visual(
+    image: UploadFile = File(...),
+    payload: str = Form(...),
+    settings: Settings = Depends(get_settings),
+    pipeline: Pipeline | None = Depends(get_pipeline),
+    generator: ImageGenerator | None = Depends(get_generator),
+) -> GenerateResponse:
+    """Optional AI visual (PRD 8.6): the user's figure in a target pose, then validated against that pose."""
+    if generator is None:
+        raise HTTPException(503, "AI visuals are not configured on this server.")
+    try:
+        request = GenerateRequest.model_validate_json(payload)
+    except ValueError as exc:
+        raise HTTPException(422, f"Invalid payload: {exc}") from exc
+    known = load_profiles(settings.skeleton_profiles_path)
+    if request.profile not in known:
+        raise HTTPException(422, f"Unknown profile '{request.profile}'.")
+    profile = known[request.profile]
+
+    data = await image.read(settings.max_upload_mb * 1024 * 1024 + 1)
+    if len(data) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(413, f"Image is larger than {settings.max_upload_mb} MB.")
+    try:
+        source = load_image(data)
+    except UnreadableImage as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    target = to_view(request.target.keypoints, request.target.image_size)
+    if request.mirrored:
+        target = mirror(target)
+    prompt = build_prompt(profile, request.instructions, request.mirrored)
+
+    def work():
+        result = generator.generate(source, prompt, target, profile).convert("RGB")
+        return result, validate(result, target, profile, pipeline, settings.validation_min_similarity,
+                                settings.validation_max_joint_error)
+
+    async with _inference_slot:
+        result, validation = await run_in_threadpool(work)
+
+    buf = io.BytesIO()
+    result.save(buf, "JPEG", quality=88)
+    return GenerateResponse(provider=generator.name, prompt=prompt, image_base64=base64.b64encode(buf.getvalue()).decode(),
+                            mime="image/jpeg", width=result.width, height=result.height, validation=validation)
 
 
 @app.post("/v1/analyze")
