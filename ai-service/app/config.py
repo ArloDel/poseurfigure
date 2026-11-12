@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     # Below this, the app asks the user to confirm the figure type (FIG-03).
     min_profile_confidence: float = 0.6
 
+    # Optional AI visuals (Sprint 7). "none" = feature off; "stub" = development stand-in, nothing leaves the machine.
+    generation_provider: str = "none"
+    # A generated image is `validated` only if the pose found in it is at least this similar to the target.
+    validation_min_similarity: float = 0.85
+    # ...and no joint angle both poses show is off by more than this many degrees.
+    validation_max_joint_error: float = 40.0
+
 
 @lru_cache
 def get_settings() -> Settings:

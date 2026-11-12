@@ -129,6 +129,25 @@ class RecommendResponse(BaseModel):
     remaining: int = 0
 
 
+class GenerateRequest(BaseModel):
+    profile: str
+    target: PoseInput
+    instructions: list[dict] = []
+    # The user's figure matches the target mirrored: generate the mirror image of the pose.
+    mirrored: bool = False
+
+
+class GenerateResponse(BaseModel):
+    provider: str
+    prompt: str
+    image_base64: str
+    mime: str
+    width: int
+    height: int
+    # status: validated | rejected | unvalidated; reason: no_figure | pose_unreadable | pose_mismatch | models_disabled
+    validation: dict
+
+
 class SkeletonProfile(BaseModel):
     profile: str
     name: str
