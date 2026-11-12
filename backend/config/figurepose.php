@@ -12,6 +12,17 @@ return [
     */
     'catalog_path' => env('CATALOG_PATH', base_path('../shared/catalog/poses.json')),
 
+    /*
+    | Optional AI visuals (PRD 8.6). Off unless a provider is configured in the AI service.
+    */
+    'generation' => [
+        'enabled' => (bool) env('GENERATION_ENABLED', false),
+        // PRD 20: no unlimited generation. Per user or guest device, per 24 hours.
+        'daily_limit' => (int) env('GENERATION_DAILY_LIMIT', 10),
+        // Generated images are private; the app gets a link that expires (PRD 15.1).
+        'url_ttl_minutes' => (int) env('GENERATION_URL_TTL_MINUTES', 15),
+    ],
+
     'recommendations' => [
         // PRD REC-01: 3-5 recommendations per analysis.
         'count' => (int) env('RECOMMENDATION_COUNT', 5),
