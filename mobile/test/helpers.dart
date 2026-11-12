@@ -6,6 +6,8 @@ import 'package:figurepose/features/auth/domain/app_user.dart';
 import 'package:figurepose/features/favorites/data/favorites_repository.dart';
 import 'package:figurepose/features/poses/data/pose_repository.dart';
 import 'package:figurepose/features/poses/domain/pose.dart';
+import 'package:figurepose/features/visuals/data/visual_repository.dart';
+import 'package:figurepose/features/visuals/domain/ai_visual.dart';
 import 'package:figurepose/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -177,7 +179,7 @@ Map<String, dynamic> recJson(int rank, int poseId, {bool mirrored = false, List<
 }
 
 Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confidence = 0.9, bool needsConfirmation = false,
-    bool byUser = false, List<Map<String, dynamic>> recommendations = const [], bool typeOnly = false, bool more = true}) {
+    bool byUser = false, List<Map<String, dynamic>> recommendations = const [], bool typeOnly = false, bool more = true, bool visuals = false}) {
   Map<String, dynamic> kp(double x, double y, [String vis = 'visible']) => {'x': x, 'y': y, 'confidence': 0.9, 'visibility': vis};
   return Analysis.fromJson({
     'analysis_id': id,
@@ -189,6 +191,7 @@ Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confi
     'recommendations': recommendations,
     'recommendation_basis': typeOnly ? 'type_only' : 'pose',
     'more_recommendations': more,
+    'ai_visuals_available': visuals,
     'classification': {'profile': profile, 'confidence': byUser ? 1.0 : confidence, 'needs_confirmation': needsConfirmation,
       'source': byUser ? 'user' : 'model'},
     'pose': {
@@ -209,6 +212,35 @@ Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confi
   });
 }
 
+class FakeVisualRepository implements VisualRepository {
+  final requests = <({int poseId, String analysisId, bool mirrored})>[];
+
+  /// What request() returns, then what each fetch() returns in turn.
+  AiVisual first = visual('generated', 'validated');
+  final later = <AiVisual>[];
+
+  static AiVisual visual(String status, String validation, {String provider = 'stub', String? error}) => AiVisual.fromJson({
+        'id': 5, 'status': status, 'validation_status': validation, 'provider': provider,
+        'image_url': status == 'generated' ? 'http://localhost/generated/5.jpg' : null,
+        'validation_note': status != 'generated'
+            ? null
+            : validation == 'validated'
+                ? 'The pose in this image matches the target pose. It is not proof your figure can hold it.'
+                : "This image doesn't show the target pose reliably. Follow the catalog steps instead.",
+        'poll_after_seconds': status == 'pending' ? 2 : null,
+        'error': error == null ? null : {'message': error},
+      });
+
+  @override
+  Future<AiVisual> request({required int poseId, required String analysisId, bool mirrored = false}) async {
+    requests.add((poseId: poseId, analysisId: analysisId, mirrored: mirrored));
+    return first;
+  }
+
+  @override
+  Future<AiVisual> fetch(int id) async => later.removeAt(0);
+}
+
 class TestApp {
   TestApp({List<Analysis>? history}) : analyses = FakeAnalysisRepository(history);
 
@@ -216,12 +248,14 @@ class TestApp {
   final auth = FakeAuthRepository();
   final favorites = FakeFavoritesRepository();
   final FakeAnalysisRepository analyses;
+  final visuals = FakeVisualRepository();
 
   List<Override> get overrides => [
         poseRepositoryProvider.overrideWithValue(poses),
         authRepositoryProvider.overrideWithValue(auth),
         favoritesRepositoryProvider.overrideWithValue(favorites),
         analysisRepositoryProvider.overrideWithValue(analyses),
+        visualRepositoryProvider.overrideWithValue(visuals),
       ];
 
   /// Pumps the real app on a phone-sized screen with fake repositories and an empty keychain.
