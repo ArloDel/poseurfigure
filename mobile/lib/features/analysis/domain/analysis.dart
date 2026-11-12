@@ -1,6 +1,8 @@
 import 'pose_result.dart';
+import 'recommendation.dart';
 
 export 'pose_result.dart';
+export 'recommendation.dart';
 
 enum AnalysisStatus {
   pending,
@@ -39,6 +41,9 @@ class Analysis {
     this.typeGuess,
     this.pose,
     this.figureCount = 0,
+    this.recommendations = const [],
+    this.typeOnly = false,
+    this.moreRecommendations = false,
   });
 
   final String id;
@@ -57,6 +62,11 @@ class Analysis {
   final FigureTypeGuess? typeGuess;
   final PoseResult? pose;
   final int figureCount;
+  final List<PoseRecommendation> recommendations;
+
+  /// The figure's pose couldn't be read, so recommendations are poses for its type, not matches.
+  final bool typeOnly;
+  final bool moreRecommendations;
 
   factory Analysis.fromJson(Map<String, dynamic> json) {
     final error = json['error'] as Map<String, dynamic>?;
@@ -77,6 +87,12 @@ class Analysis {
       typeGuess: json['classification'] is Map ? FigureTypeGuess.fromJson(json['classification'] as Map<String, dynamic>) : null,
       pose: json['pose'] is Map ? PoseResult.fromJson(json['pose'] as Map<String, dynamic>) : null,
       figureCount: (json['figures'] as List?)?.length ?? 0,
+      recommendations: [
+        for (final r in (json['recommendations'] as List? ?? const []))
+          PoseRecommendation.fromJson(r as Map<String, dynamic>),
+      ],
+      typeOnly: json['recommendation_basis'] == 'type_only',
+      moreRecommendations: json['more_recommendations'] as bool? ?? false,
       issues: [
         for (final i in (quality?['issues'] as List? ?? const []))
           QualityIssue((i as Map)['code'] as String, i['message'] as String),
