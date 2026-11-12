@@ -47,6 +47,23 @@ class AIService
     }
 
     /**
+     * Asks for an AI visual of the photo's figure in a target pose (PRD 8.6). The response carries the image
+     * (base64) and its validation against the target pose.
+     *
+     * @param  array<string, mixed>  $payload  profile, target {keypoints, image_size}, instructions, mirrored
+     * @return array{provider: string, image_base64: string, mime: string, validation: array<string, mixed>, prompt: string}
+     */
+    public function generate(string $imageBytes, string $filename, array $payload, string $requestId): array
+    {
+        return $this->client()
+            ->withHeaders(['X-Request-Id' => $requestId])
+            ->attach('image', $imageBytes, $filename)
+            ->post('/v1/generate', ['payload' => json_encode($payload)])
+            ->throw()
+            ->json();
+    }
+
+    /**
      * Sends the photo for analysis. Sprint 1: image quality checks only; detection and keypoints come later.
      *
      * @return array{model_version: string, stage: string, quality: array<string, mixed>, pose: array<string, mixed>|null}
