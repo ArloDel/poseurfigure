@@ -16,9 +16,12 @@ import '../domain/pose.dart';
 
 /// Pose detail (PRD 4.6 / 13): photo, joint steps by body region, warnings, save.
 class PoseDetailScreen extends ConsumerWidget {
-  const PoseDetailScreen({super.key, required this.poseId});
+  const PoseDetailScreen({super.key, required this.poseId, this.mirrored = false});
 
   final int poseId;
+
+  /// Opened from a recommendation where the user's figure matches this pose mirrored.
+  final bool mirrored;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +30,7 @@ class PoseDetailScreen extends ConsumerWidget {
     return Scaffold(
       body: ComicBackdrop(
         child: switch (pose) {
-          AsyncData(:final value) => _Detail(pose: value),
+          AsyncData(:final value) => _Detail(pose: value, mirrored: mirrored),
           AsyncError(:final error) => SafeArea(
               child: ListView(padding: const EdgeInsets.all(18), children: [
                 const _BackButton(),
@@ -43,9 +46,10 @@ class PoseDetailScreen extends ConsumerWidget {
 }
 
 class _Detail extends StatelessWidget {
-  const _Detail({required this.pose});
+  const _Detail({required this.pose, this.mirrored = false});
 
   final Pose pose;
+  final bool mirrored;
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +112,16 @@ class _Detail extends StatelessWidget {
                 children: [
                   Text('How to pose it', style: text.titleLarge),
                   const SizedBox(height: 12),
+                  if (mirrored)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: _Note(
+                        icon: Icons.flip_rounded,
+                        tint: AppColors.violet,
+                        title: 'Mirror it',
+                        body: 'Your figure is already close to the mirror image of this pose. Swap left and right in every step below.',
+                      ),
+                    ),
                   for (final region in BodyRegion.values)
                     if (groups[region] case final steps?)
                       Padding(

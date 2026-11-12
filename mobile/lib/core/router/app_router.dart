@@ -28,7 +28,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/poses/:id',
-        builder: (_, state) => PoseDetailScreen(poseId: int.parse(state.pathParameters['id']!)),
+        builder: (_, state) => PoseDetailScreen(
+          poseId: int.parse(state.pathParameters['id']!),
+          mirrored: state.uri.queryParameters['mirrored'] == '1',
+        ),
       ),
       GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),
       GoRoute(
