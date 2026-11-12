@@ -31,7 +31,7 @@ class PoseRecommendation {
   /// The figure's pose matches this one with left and right swapped: "mirror it".
   final bool mirrored;
 
-  /// close_to_current, new_direction, mirror, different_category, check_joints.
+  /// close_to_current, few_changes, new_direction, mirror, different_category, check_joints.
   final List<String> reasons;
   final List<JointLimitWarning> warnings;
 
@@ -52,6 +52,7 @@ class PoseRecommendation {
 /// Short labels for the reason chips on a recommendation card.
 const reasonLabels = {
   'close_to_current': 'Close to your pose',
+  'few_changes': 'A few changes',
   'new_direction': 'New direction',
   'mirror': 'Mirror it',
   'different_category': 'Something different',
