@@ -85,6 +85,10 @@ class AnalysisService
     /** Removes the analysis together with the user's photo (HIST-03, PRD 15.1). */
     public function delete(Analysis $analysis): void
     {
+        // AI visuals made from this photo go with it (rows cascade; files need deleting here).
+        foreach ($analysis->generatedImages()->whereNotNull('image_path')->get() as $generated) {
+            $this->storage->delete($generated->image_disk ?? $analysis->image_disk, $generated->image_path);
+        }
         $this->storage->delete($analysis->image_disk, $analysis->image_path);
         $analysis->delete();
     }
