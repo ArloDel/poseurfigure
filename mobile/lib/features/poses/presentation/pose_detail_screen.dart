@@ -11,17 +11,21 @@ import '../../../shared/widgets/pose_photo.dart';
 import '../../../shared/widgets/state_panels.dart';
 import '../../auth/application/session_controller.dart';
 import '../../favorites/application/favorites_controller.dart';
+import '../../visuals/presentation/ai_visual_section.dart';
 import '../application/pose_providers.dart';
 import '../domain/pose.dart';
 
 /// Pose detail (PRD 4.6 / 13): photo, joint steps by body region, warnings, save.
 class PoseDetailScreen extends ConsumerWidget {
-  const PoseDetailScreen({super.key, required this.poseId, this.mirrored = false});
+  const PoseDetailScreen({super.key, required this.poseId, this.mirrored = false, this.analysisId});
 
   final int poseId;
 
   /// Opened from a recommendation where the user's figure matches this pose mirrored.
   final bool mirrored;
+
+  /// Set when opened from a recommendation and the server offers AI visuals: enables "Make AI visual".
+  final String? analysisId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,7 +34,7 @@ class PoseDetailScreen extends ConsumerWidget {
     return Scaffold(
       body: ComicBackdrop(
         child: switch (pose) {
-          AsyncData(:final value) => _Detail(pose: value, mirrored: mirrored),
+          AsyncData(:final value) => _Detail(pose: value, mirrored: mirrored, analysisId: analysisId),
           AsyncError(:final error) => SafeArea(
               child: ListView(padding: const EdgeInsets.all(18), children: [
                 const _BackButton(),
@@ -46,10 +50,11 @@ class PoseDetailScreen extends ConsumerWidget {
 }
 
 class _Detail extends StatelessWidget {
-  const _Detail({required this.pose, this.mirrored = false});
+  const _Detail({required this.pose, this.mirrored = false, this.analysisId});
 
   final Pose pose;
   final bool mirrored;
+  final String? analysisId;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +149,10 @@ class _Detail extends StatelessWidget {
                     title: 'Angles are estimates',
                     body: "They come from a 2D reference photo. Twist and depth can't be read exactly.",
                   ),
+                  if (analysisId != null) ...[
+                    const SizedBox(height: 22),
+                    AiVisualSection(poseId: pose.id, analysisId: analysisId!, mirrored: mirrored),
+                  ],
                   if (pose.credit != null) ...[
                     const SizedBox(height: 14),
                     Text('Photo: ${pose.credit}', style: text.bodySmall),

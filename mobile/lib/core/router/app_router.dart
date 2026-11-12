@@ -31,6 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => PoseDetailScreen(
           poseId: int.parse(state.pathParameters['id']!),
           mirrored: state.uri.queryParameters['mirrored'] == '1',
+          analysisId: state.uri.queryParameters['analysis'],
         ),
       ),
       GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),

@@ -44,6 +44,7 @@ class Analysis {
     this.recommendations = const [],
     this.typeOnly = false,
     this.moreRecommendations = false,
+    this.aiVisualsAvailable = false,
   });
 
   final String id;
@@ -67,6 +68,7 @@ class Analysis {
   /// The figure's pose couldn't be read, so recommendations are poses for its type, not matches.
   final bool typeOnly;
   final bool moreRecommendations;
+  final bool aiVisualsAvailable;
 
   factory Analysis.fromJson(Map<String, dynamic> json) {
     final error = json['error'] as Map<String, dynamic>?;
@@ -93,6 +95,7 @@ class Analysis {
       ],
       typeOnly: json['recommendation_basis'] == 'type_only',
       moreRecommendations: json['more_recommendations'] as bool? ?? false,
+      aiVisualsAvailable: json['ai_visuals_available'] as bool? ?? false,
       issues: [
         for (final i in (quality?['issues'] as List? ?? const []))
           QualityIssue((i as Map)['code'] as String, i['message'] as String),

@@ -52,7 +52,12 @@ class RecommendationList extends StatelessWidget {
           GlassPanel(child: Text('No poses for a $typeName figure in the catalog yet.', style: text.bodyLarge))
         else
           for (final r in recs)
-            Padding(padding: const EdgeInsets.only(bottom: 18), child: _RecommendationCard(rec: r, typeOnly: analysis.typeOnly)),
+            Padding(padding: const EdgeInsets.only(bottom: 18), child: _RecommendationCard(
+                rec: r,
+                typeOnly: analysis.typeOnly,
+                visualsFor: analysis.aiVisualsAvailable ? analysis.id : null,
+              ),
+            ),
         if (recs.isNotEmpty)
           analysis.moreRecommendations
               ? ComicButton(
@@ -71,10 +76,13 @@ class RecommendationList extends StatelessWidget {
 }
 
 class _RecommendationCard extends StatelessWidget {
-  const _RecommendationCard({required this.rec, required this.typeOnly});
+  const _RecommendationCard({required this.rec, required this.typeOnly, this.visualsFor});
 
   final PoseRecommendation rec;
   final bool typeOnly;
+
+  /// Analysis id to make AI visuals from, when the server offers them.
+  final String? visualsFor;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +92,10 @@ class _RecommendationCard extends StatelessWidget {
       label: '${rec.rank}. ${pose.name}, ${pose.meta}${rec.mirrored ? ', mirror it' : ''}',
       excludeSemantics: true,
       child: GestureDetector(
-        onTap: () => context.push('/poses/${pose.id}${rec.mirrored ? '?mirrored=1' : ''}'),
+        onTap: () => context.push(Uri(path: '/poses/${pose.id}', queryParameters: {
+          if (rec.mirrored) 'mirrored': '1',
+          'analysis': ?visualsFor,
+        }).toString()),
         child: SizedBox(
           height: 330,
           child: ComicPanel(
