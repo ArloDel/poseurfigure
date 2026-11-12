@@ -52,6 +52,9 @@ class AnalysisResource extends JsonResource
                 fn () => $this->pose_data['recommendation']['basis'] ?? 'pose'),
             'more_recommendations' => $this->when($this->status === AnalysisStatus::Completed,
                 fn () => ($this->pose_data['recommendation']['remaining'] ?? 0) > 0),
+            // Whether the app may offer "Make AI visual" for this analysis' recommendations.
+            'ai_visuals_available' => $this->when($this->status === AnalysisStatus::Completed,
+                (bool) config('figurepose.generation.enabled')),
             'error' => $this->when($this->status === AnalysisStatus::Failed, fn () => [
                 'code' => $this->failure_code,
                 'message' => $this->failure_message,

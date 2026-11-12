@@ -20,7 +20,11 @@ class HealthController extends ApiController
 
         return response()->json([
             'success' => $healthy,
-            'data' => ['status' => $healthy ? 'ok' : 'degraded', 'checks' => $checks],
+            'data' => [
+                'status' => $healthy ? 'ok' : 'degraded',
+                'checks' => $checks,
+                'features' => ['ai_visuals' => (bool) config('figurepose.generation.enabled')],
+            ],
         ], $healthy ? 200 : 503);
     }
 
