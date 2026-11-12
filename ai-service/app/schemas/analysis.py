@@ -113,8 +113,8 @@ class Recommendation(BaseModel):
     shared_joints: int
     mirrored: bool
     warnings: list[dict]
-    # Why this pose is in the list, for the app's copy: close_to_current, new_direction, mirror,
-    # different_category, check_joints.
+    # Why this pose is in the list, for the app's copy: close_to_current, few_changes, new_direction,
+    # mirror, different_category, check_joints.
     reasons: list[str] = []
 
 

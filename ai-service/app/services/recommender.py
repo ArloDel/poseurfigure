@@ -40,9 +40,12 @@ def _basis(query) -> str:
 def _reasons(sim: float, mirrored: bool, warnings: list, new_category: bool, basis: str) -> list[str]:
     r = []
     if basis == "pose":
+        # Every pick ranked against the user's pose says how far it is: close, a few changes, or new.
         if sim >= CLOSE:
             r.append("close_to_current")
-        elif sim < FAR:
+        elif sim >= FAR:
+            r.append("few_changes")
+        else:
             r.append("new_direction")
         if mirrored:
             r.append("mirror")

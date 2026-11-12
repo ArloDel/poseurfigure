@@ -83,6 +83,13 @@ def test_reasons_describe_each_pick():
     assert "check_joints" in by_id[2].reasons
 
 
+def test_every_pose_ranked_pick_says_how_far_it_is():
+    cands = [(1, STANDING, "action", "easy"), (2, ARM_OUT, "calm", "easy"), (3, CROUCH, "display", "easy"), (4, ARM_UP, "action", "easy")]
+    resp = rank(req(kps(STANDING), cands, top_k=4), H)
+    distance = {"close_to_current", "few_changes", "new_direction"}
+    assert all(len(distance & set(r.reasons)) == 1 for r in resp.results)
+
+
 def test_scores_stay_comparable_to_v1():
     resp = rank(req(kps(STANDING), [(1, STANDING, "action", "easy")]), H)
     r = resp.results[0]
