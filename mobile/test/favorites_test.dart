@@ -49,4 +49,21 @@ void main() {
       expect(app.favorites.items, isEmpty);
     });
   });
+
+  testWidgets('favorites are grouped by category, newest group first', (tester) async {
+    final app = TestApp();
+    await app.pump(tester);
+    await app.favorites.add(1); // action
+    await app.favorites.add(2); // cinematic, saved later
+    await signIn(tester);
+    await openTab(tester, 'Favorites');
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 saved poses'), findsOneWidget);
+    final cinematic = tester.getTopLeft(find.text('Cinematic · 1')).dy;
+    final action = tester.getTopLeft(find.text('Action · 1')).dy;
+    expect(cinematic, lessThan(action));
+    expect(tester.getTopLeft(find.text('Rifle aim')).dy, lessThan(action));
+    expect(tester.getTopLeft(find.text('Rider ready stance')).dy, greaterThan(action));
+  });
 }

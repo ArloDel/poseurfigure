@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/labels.dart';
 import '../../../shared/widgets/comic_button.dart';
 import '../../../shared/widgets/comic_panel.dart';
 import '../../../shared/widgets/glass_panel.dart';
@@ -24,6 +25,14 @@ class FavoritesScreen extends ConsumerWidget {
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
     }
+  }
+
+  static Map<String, List<FavoriteItem>> _byCategory(List<FavoriteItem> items) {
+    final groups = <String, List<FavoriteItem>>{};
+    for (final f in items) {
+      groups.putIfAbsent(f.pose.category, () => []).add(f);
+    }
+    return groups;
   }
 
   @override
@@ -52,12 +61,27 @@ class FavoritesScreen extends ConsumerWidget {
       (_, AsyncData(:final value)) => [
           Text('${value.length} saved pose${value.length == 1 ? '' : 's'}',
               style: text.bodyLarge?.copyWith(color: AppColors.mute)),
-          const SizedBox(height: 16),
-          for (final f in value)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _FavoriteRow(item: f, onRemove: () => _remove(context, ref, f)),
+          // Grouped by category (FAV-04). The list comes newest first, so the most recently used
+          // category leads and each group keeps its newest pose on top.
+          for (final MapEntry(key: category, value: items) in _byCategory(value).entries) ...[
+            const SizedBox(height: 16),
+            Semantics(
+              header: true,
+              child: Text('${capitalize(category)} · ${items.length}',
+                  style: const TextStyle(
+                    fontFamily: 'BowlbyOne',
+                    fontSize: 16,
+                    color: AppColors.yellow,
+                    shadows: [Shadow(color: AppColors.line, offset: Offset(1.5, 1.5))],
+                  )),
             ),
+            const SizedBox(height: 10),
+            for (final f in items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _FavoriteRow(item: f, onRemove: () => _remove(context, ref, f)),
+              ),
+          ],
         ],
       (_, AsyncError(:final error)) => [ErrorPanel(message: '$error', onRetry: () => ref.invalidate(favoritesProvider))],
       _ => [const LoadingPanel()],

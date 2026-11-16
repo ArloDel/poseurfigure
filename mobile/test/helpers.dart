@@ -97,8 +97,9 @@ class FakeFavoritesRepository implements FavoritesRepository {
   final items = <FavoriteItem>[];
   int _nextId = 1;
 
+  /// Newest first, like the API.
   @override
-  Future<List<FavoriteItem>> list() async => List.of(items);
+  Future<List<FavoriteItem>> list() async => items.reversed.toList();
 
   @override
   Future<FavoriteItem> add(int poseId) async {
