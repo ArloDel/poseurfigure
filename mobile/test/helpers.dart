@@ -280,3 +280,14 @@ Future<void> openTab(WidgetTester tester, String label) async {
   await tester.tap(find.descendant(of: find.byType(Semantics), matching: find.text(label)).last);
   await tester.pumpAndSettle();
 }
+
+/// Signs in through the Profile tab with the fake account.
+Future<void> signIn(WidgetTester tester, {String password = FakeAuthRepository.password}) async {
+  await openTab(tester, 'Profile');
+  await tester.tap(find.text('Sign in').last);
+  await tester.pumpAndSettle();
+  await tester.enterText(find.widgetWithText(TextFormField, 'Email'), FakeAuthRepository.email);
+  await tester.enterText(find.widgetWithText(TextFormField, 'Password'), password);
+  await tester.tap(find.text('Sign in').last);
+  await tester.pumpAndSettle();
+}

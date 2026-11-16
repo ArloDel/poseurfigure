@@ -4,16 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers.dart';
 
-Future<void> signIn(WidgetTester tester, {String password = FakeAuthRepository.password}) async {
-  await openTab(tester, 'Profile');
-  await tester.tap(find.text('Sign in').last);
-  await tester.pumpAndSettle();
-  await tester.enterText(find.widgetWithText(TextFormField, 'Email'), FakeAuthRepository.email);
-  await tester.enterText(find.widgetWithText(TextFormField, 'Password'), password);
-  await tester.tap(find.text('Sign in').last);
-  await tester.pumpAndSettle();
-}
-
 void main() {
   group('Pose gallery', () {
     testWidgets('lists poses and filters by category and figure type', (tester) async {
