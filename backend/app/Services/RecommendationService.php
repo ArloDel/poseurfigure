@@ -63,6 +63,7 @@ class RecommendationService
                 'mirrored' => $r['mirrored'] ?? false,
                 'warnings' => $r['warnings'] ?? [],
                 'reasons' => $r['reasons'] ?? [],
+                'changes' => $r['changes'] ?? [],
                 'matcher_version' => $result['matcher_version'] ?? null,
             ],
         ])->all();

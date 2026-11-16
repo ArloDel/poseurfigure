@@ -43,6 +43,9 @@ class AnalysisResource extends JsonResource
                     'warnings' => $r->details['warnings'] ?? [],
                     // close_to_current, few_changes, new_direction, mirror, different_category, check_joints
                     'reasons' => $r->details['reasons'] ?? [],
+                    // What to change on the user's figure, joint by joint, in their own left/right: keep, bend,
+                    // straighten, raise, lower, lift_leg, lower_leg, unknown. Empty when ranked by figure type only.
+                    'changes' => $r->details['changes'] ?? [],
                     'pose' => (new PoseResource($r->pose))->resolve($request),
                 ])->all(),
             ),

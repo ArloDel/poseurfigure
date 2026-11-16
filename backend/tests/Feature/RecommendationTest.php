@@ -72,6 +72,7 @@ class RecommendationTest extends TestCase
                         'id' => $id, 'score' => 0.9 - $i / 10, 'similarity' => 0.8, 'feasibility' => $i === 0 ? 0.7 : 1.0,
                         'components' => ['angle' => 0.8], 'shared_joints' => 12, 'mirrored' => $i === 0,
                         'reasons' => $i === 0 ? ['mirror', 'check_joints'] : ['different_category'],
+                        'changes' => [['joint' => 'right_knee', 'action' => 'bend', 'target' => 90, 'current' => 170, 'delta' => -80, 'priority' => 'high']],
                         'warnings' => $i === 0 ? [['joint' => 'left_elbow', 'target' => 20, 'limit' => 35, 'beyond_by' => 15, 'limit_source' => 'estimated']] : [],
                     ], $ids, array_keys($ids))]);
             },
@@ -175,7 +176,9 @@ class RecommendationTest extends TestCase
         $this->withHeader('X-Guest-Key', $this->guestKey)->getJson("/api/v1/analyses/{$analysis->public_id}")
             ->assertJsonPath('data.recommendation_basis', 'pose')
             ->assertJsonPath('data.more_recommendations', true)
-            ->assertJsonPath('data.recommendations.0.reasons', ['mirror', 'check_joints']);
+            ->assertJsonPath('data.recommendations.0.reasons', ['mirror', 'check_joints'])
+            ->assertJsonPath('data.recommendations.0.changes.0.action', 'bend')
+            ->assertJsonPath('data.recommendations.0.changes.0.delta', -80);
     }
 
     public function test_show_different_poses_until_the_catalog_runs_out(): void
