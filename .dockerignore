@@ -1,0 +1,5 @@
+# Only the nginx image builds from the repository root; it needs these three folders and nothing else.
+*
+!infrastructure/nginx
+!backend/public/catalog
+!mobile/build/web
