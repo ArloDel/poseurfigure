@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -6,6 +7,9 @@ import '../../../../shared/widgets/comic_button.dart';
 import '../../../../shared/widgets/comic_panel.dart';
 import '../../../../shared/widgets/glass_panel.dart';
 import '../../../../shared/widgets/pose_photo.dart';
+import '../../../favorites/application/favorites_controller.dart';
+import '../../../favorites/presentation/favorite_actions.dart';
+import '../../../poses/domain/pose.dart';
 import '../../domain/analysis.dart';
 
 /// "Poses for your figure": ranked suggestions with why each is there (PRD 4.5, 6.1 Recommendations).
@@ -87,6 +91,14 @@ class _RecommendationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pose = rec.pose;
+    // The save button sits outside the card's merged label, so screen readers can reach it on its own.
+    return Stack(children: [
+      _card(context, pose),
+      Positioned(right: 8, top: 48, child: _SaveHeart(pose: pose)),
+    ]);
+  }
+
+  Widget _card(BuildContext context, Pose pose) {
     return Semantics(
       button: true,
       label: '${rec.rank}. ${pose.name}, ${pose.meta}${rec.mirrored ? ', mirror it' : ''}',
@@ -153,6 +165,31 @@ class _RecommendationCard extends StatelessWidget {
             ]),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Save a recommended pose straight from its card (FAV-01), without opening it.
+class _SaveHeart extends ConsumerWidget {
+  const _SaveHeart({required this.pose});
+
+  final Pose pose;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(favoritesProvider);
+    final saved = ref.read(favoritesProvider.notifier).contains(pose.id);
+    return GlassPanel(
+      overPhoto: true,
+      radius: 14,
+      shadowOffset: 3,
+      padding: EdgeInsets.zero,
+      child: IconButton(
+        onPressed: () => toggleFavorite(context, ref, pose),
+        tooltip: saved ? 'Remove ${pose.name} from favorites' : 'Save ${pose.name} to favorites',
+        icon: Icon(saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            color: saved ? AppColors.red : Colors.white),
       ),
     );
   }
