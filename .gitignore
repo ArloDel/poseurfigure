@@ -1,4 +1,7 @@
 .env
+.env.prod
+# Database dumps from infrastructure/scripts/backup-db.sh
+backups/
 .DS_Store
 Thumbs.db
 .idea/

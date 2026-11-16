@@ -1,0 +1,174 @@
+# Production-like stack. Runs on this machine as its own project, next to the dev stack:
+#   cd mobile && flutter build web --release --dart-define=API_BASE_URL=/api/v1 && cd ..
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Then open http://localhost:8080. Only nginx publishes a port; the other services are reachable only from
+# inside the stack's own network. Differences from docker-compose.yml: nginx + PHP-FPM instead of PHP's built-in server,
+# code baked into images, no dev dependencies, cached config, image versions pinned by digest.
+# Not done here, because it depends on the server: TLS, a managed S3 bucket, off-site backups.
+name: figurepose-prod
+
+x-backend-env: &backend-env
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_KEY: ${APP_KEY:?set APP_KEY in .env.prod}
+  APP_URL: ${APP_URL:-http://localhost:8080}
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_DATABASE: figurepose
+  DB_USERNAME: figurepose
+  DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env.prod}
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis
+  QUEUE_CONNECTION: redis
+  CACHE_STORE: redis
+  SESSION_DRIVER: redis
+  FILESYSTEM_DISK: s3
+  FIGUREPOSE_IMAGE_DISK: s3
+  AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env.prod}
+  AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env.prod}
+  AWS_DEFAULT_REGION: ${S3_REGION:-us-east-1}
+  AWS_BUCKET: ${S3_BUCKET:-figurepose-images}
+  AWS_ENDPOINT: ${S3_ENDPOINT:-http://storage:8333}
+  AWS_USE_PATH_STYLE_ENDPOINT: "true"
+  AI_SERVICE_URL: http://ai:8001
+  AI_SERVICE_TIMEOUT: "60"
+  SKELETON_PROFILES_PATH: /shared/skeleton_profiles
+  CATALOG_PATH: /shared/catalog/poses.json
+  # Off until a real image provider is connected (README "AI visuals").
+  GENERATION_ENABLED: ${GENERATION_ENABLED:-false}
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/nginx/Dockerfile
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [edge, internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/index.html"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: figurepose-backend:prod
+    environment:
+      <<: *backend-env
+      RUN_SETUP: "true"
+    volumes:
+      - ./shared:/shared:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      storage: { condition: service_healthy }
+      ai: { condition: service_healthy }
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      # PHP-FPM's own ping, through FastCGI: proves workers are answering.
+      test: ["CMD-SHELL", "SCRIPT_NAME=/fpm-ping SCRIPT_FILENAME=/fpm-ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q pong"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  worker:
+    image: figurepose-backend:prod
+    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--timeout=90", "--max-time=3600"]
+    environment: *backend-env
+    volumes:
+      - ./shared:/shared:ro
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [internal]
+    restart: unless-stopped
+
+  ai:
+    build:
+      context: ./ai-service
+      args: { INSTALL_DEV: "false" }
+    environment:
+      AI_WARMUP: "true"
+      AI_GENERATION_PROVIDER: ${AI_GENERATION_PROVIDER:-none}
+    volumes:
+      - ./shared:/shared:ro
+      - model_cache:/models
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 600s
+
+  postgres:
+    image: pgvector/pgvector@sha256:7d0a41464797aeb9862dfdc0bbf1526b82cfd324cdd8036df19e3545f4a9ccb8  # pg17
+    environment:
+      POSTGRES_DB: figurepose
+      POSTGRES_USER: figurepose
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U figurepose -d figurepose"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis@sha256:c5d34a98396a4775e223c74e929162c35c5a2182901ba26b50ade939941ce14b  # 7.4-alpine
+    # Keep queued jobs across restarts.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  storage:
+    image: chrislusf/seaweedfs@sha256:ccad23e18639c8b98cee17e7100b95830a06077b56d8e5b006d6dcf8ec5e94a0  # 4.53
+    entrypoint: ["sh", "/start.sh"]
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+    volumes:
+      - storage_data:/data
+      - ./infrastructure/seaweedfs/start.sh:/start.sh:ro
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://127.0.0.1:8333/ 2>&1 | grep -q 'HTTP/'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+networks:
+  edge:
+  # Not marked `internal: true`: the AI service downloads its models on first start.
+  internal:
+
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:
+  # Point MODEL_CACHE_VOLUME at the dev stack's volume (figurepose_model_cache) to skip a second 1.3 GB download.
+  model_cache:
+    name: ${MODEL_CACHE_VOLUME:-figurepose-prod_model_cache}
