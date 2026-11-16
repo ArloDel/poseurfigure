@@ -11,8 +11,8 @@ import '../../../shared/widgets/pose_photo.dart';
 import '../../../shared/widgets/state_panels.dart';
 import '../../analysis/data/analysis_repository.dart';
 import '../../analysis/domain/recommendation.dart';
-import '../../auth/application/session_controller.dart';
 import '../../favorites/application/favorites_controller.dart';
+import '../../favorites/presentation/favorite_actions.dart';
 import '../../visuals/presentation/ai_visual_section.dart';
 import '../application/pose_providers.dart';
 import '../domain/pose.dart';
@@ -329,22 +329,9 @@ class _SaveBarState extends ConsumerState<_SaveBar> {
   bool _busy = false;
 
   Future<void> _toggle() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final user = ref.read(sessionProvider).value;
-    if (user == null) {
-      messenger.showSnackBar(SnackBar(
-        content: const Text('Sign in to save poses to your favorites.'),
-        action: SnackBarAction(label: 'Sign in', onPressed: () => context.push('/sign-in')),
-      ));
-      return;
-    }
-    final wasSaved = ref.read(favoritesProvider.notifier).contains(widget.pose.id);
     setState(() => _busy = true);
     try {
-      await ref.read(favoritesProvider.notifier).toggle(widget.pose);
-      messenger.showSnackBar(SnackBar(content: Text(wasSaved ? 'Removed from favorites' : 'Saved to favorites')));
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      await toggleFavorite(context, ref, widget.pose);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
