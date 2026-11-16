@@ -13,6 +13,8 @@ x-backend-env: &backend-env
   APP_KEY: ${APP_KEY:?set APP_KEY in .env.prod}
   APP_URL: ${APP_URL:-http://localhost:8080}
   LOG_CHANNEL: stderr
+  # One JSON object per line, with request_id in its context, like nginx's access log.
+  LOG_STDERR_FORMATTER: Monolog\Formatter\JsonFormatter
   LOG_LEVEL: ${LOG_LEVEL:-info}
   DB_CONNECTION: pgsql
   DB_HOST: postgres
