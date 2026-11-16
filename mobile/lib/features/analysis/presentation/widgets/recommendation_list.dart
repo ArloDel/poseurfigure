@@ -55,7 +55,7 @@ class RecommendationList extends StatelessWidget {
             Padding(padding: const EdgeInsets.only(bottom: 18), child: _RecommendationCard(
                 rec: r,
                 typeOnly: analysis.typeOnly,
-                visualsFor: analysis.aiVisualsAvailable ? analysis.id : null,
+                analysisId: analysis.id,
               ),
             ),
         if (recs.isNotEmpty)
@@ -76,13 +76,13 @@ class RecommendationList extends StatelessWidget {
 }
 
 class _RecommendationCard extends StatelessWidget {
-  const _RecommendationCard({required this.rec, required this.typeOnly, this.visualsFor});
+  const _RecommendationCard({required this.rec, required this.typeOnly, required this.analysisId});
 
   final PoseRecommendation rec;
   final bool typeOnly;
 
-  /// Analysis id to make AI visuals from, when the server offers them.
-  final String? visualsFor;
+  /// The detail screen reads this recommendation's steps (and AI visual offer) from the analysis.
+  final String analysisId;
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +94,7 @@ class _RecommendationCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () => context.push(Uri(path: '/poses/${pose.id}', queryParameters: {
           if (rec.mirrored) 'mirrored': '1',
-          'analysis': ?visualsFor,
+          'analysis': analysisId,
         }).toString()),
         child: SizedBox(
           height: 330,

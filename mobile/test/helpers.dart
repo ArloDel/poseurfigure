@@ -166,13 +166,15 @@ class FakeAnalysisRepository implements AnalysisRepository {
 
 /// A completed analysis as the API returns it.
 /// A recommendation as the API returns it, for the sample poses (1 = Rider ready stance, 2 = Rifle aim).
-Map<String, dynamic> recJson(int rank, int poseId, {bool mirrored = false, List<String> reasons = const [], bool warn = false}) {
+Map<String, dynamic> recJson(int rank, int poseId,
+    {bool mirrored = false, List<String> reasons = const [], bool warn = false, List<Map<String, dynamic>> changes = const []}) {
   final p = poseId == 1
       ? {'id': 1, 'slug': 'rider-ready-stance', 'name': 'Rider ready stance', 'category': 'action', 'difficulty': 'medium', 'profile': 'humanoid_v1'}
       : {'id': 2, 'slug': 'rifle-aim', 'name': 'Rifle aim', 'category': 'cinematic', 'difficulty': 'medium', 'profile': 'humanoid_v1'};
   return {
     'rank': rank, 'score': 0.9, 'similarity_score': 0.86, 'feasibility_score': warn ? 0.7 : 1.0, 'mirrored': mirrored,
     'reasons': reasons,
+    'changes': changes,
     'warnings': warn ? [{'joint': 'left_elbow', 'target': 20, 'limit': 35}] : [],
     'pose': p,
   };

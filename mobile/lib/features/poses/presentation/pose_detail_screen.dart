@@ -9,6 +9,8 @@ import '../../../shared/widgets/comic_button.dart';
 import '../../../shared/widgets/glass_panel.dart';
 import '../../../shared/widgets/pose_photo.dart';
 import '../../../shared/widgets/state_panels.dart';
+import '../../analysis/data/analysis_repository.dart';
+import '../../analysis/domain/recommendation.dart';
 import '../../auth/application/session_controller.dart';
 import '../../favorites/application/favorites_controller.dart';
 import '../../visuals/presentation/ai_visual_section.dart';
@@ -24,17 +26,26 @@ class PoseDetailScreen extends ConsumerWidget {
   /// Opened from a recommendation where the user's figure matches this pose mirrored.
   final bool mirrored;
 
-  /// Set when opened from a recommendation and the server offers AI visuals: enables "Make AI visual".
+  /// Set when opened from an analysis' recommendations: adds steps from the user's own figure and,
+  /// when the server offers them, "Make AI visual".
   final String? analysisId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pose = ref.watch(poseDetailProvider(poseId));
+    // If the analysis can't be loaded, the page still works: catalog steps only, no AI visual.
+    final analysis = analysisId == null ? null : ref.watch(analysisResultProvider(analysisId!)).value;
+    final rec = analysis?.recommendations.where((r) => r.pose.id == poseId).firstOrNull;
 
     return Scaffold(
       body: ComicBackdrop(
         child: switch (pose) {
-          AsyncData(:final value) => _Detail(pose: value, mirrored: mirrored, analysisId: analysisId),
+          AsyncData(:final value) => _Detail(
+              pose: value,
+              mirrored: mirrored,
+              changes: rec?.changes ?? const [],
+              visualsFor: analysis != null && analysis.aiVisualsAvailable ? analysis.id : null,
+            ),
           AsyncError(:final error) => SafeArea(
               child: ListView(padding: const EdgeInsets.all(18), children: [
                 const _BackButton(),
@@ -50,11 +61,16 @@ class PoseDetailScreen extends ConsumerWidget {
 }
 
 class _Detail extends StatelessWidget {
-  const _Detail({required this.pose, this.mirrored = false, this.analysisId});
+  const _Detail({required this.pose, this.mirrored = false, this.changes = const [], this.visualsFor});
 
   final Pose pose;
   final bool mirrored;
-  final String? analysisId;
+
+  /// From the user's figure to this pose, joint by joint. Empty when not opened from an analysis.
+  final List<JointChange> changes;
+
+  /// Analysis to make AI visuals from, when the server offers them.
+  final String? visualsFor;
 
   @override
   Widget build(BuildContext context) {
@@ -115,16 +131,24 @@ class _Detail extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('How to pose it', style: text.titleLarge),
+                  if (changes.isNotEmpty) ...[
+                    Text('From your figure', style: text.titleLarge),
+                    const SizedBox(height: 12),
+                    _YourSteps(changes: changes),
+                    const SizedBox(height: 22),
+                  ],
+                  Text(changes.isEmpty ? 'How to pose it' : 'Reference steps', style: text.titleLarge),
                   const SizedBox(height: 12),
                   if (mirrored)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 12),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
                       child: _Note(
                         icon: Icons.flip_rounded,
                         tint: AppColors.violet,
                         title: 'Mirror it',
-                        body: 'Your figure is already close to the mirror image of this pose. Swap left and right in every step below.',
+                        body: changes.isEmpty
+                            ? 'Your figure is already close to the mirror image of this pose. Swap left and right in every step below.'
+                            : "Your figure is close to the mirror image of this pose. Your steps above already use your figure's left and right; swap them in the reference steps below.",
                       ),
                     ),
                   for (final region in BodyRegion.values)
@@ -149,9 +173,9 @@ class _Detail extends StatelessWidget {
                     title: 'Angles are estimates',
                     body: "They come from a 2D reference photo. Twist and depth can't be read exactly.",
                   ),
-                  if (analysisId != null) ...[
+                  if (visualsFor != null) ...[
                     const SizedBox(height: 22),
-                    AiVisualSection(poseId: pose.id, analysisId: analysisId!, mirrored: mirrored),
+                    AiVisualSection(poseId: pose.id, analysisId: visualsFor!, mirrored: mirrored),
                   ],
                   if (pose.credit != null) ...[
                     const SizedBox(height: 14),
@@ -221,6 +245,73 @@ class _StepGroup extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Steps from the figure's current pose (PRD 4.6): only the joints that need to move, biggest moves
+/// flagged, then which joints are already right and which the photo didn't show.
+class _YourSteps extends StatelessWidget {
+  const _YourSteps({required this.changes});
+
+  final List<JointChange> changes;
+
+  @override
+  Widget build(BuildContext context) {
+    final moves = changes.where((c) => c.isMove).toList();
+    final kept = changes.where((c) => c.action == 'keep').map((c) => c.partLabel).toList();
+    final unknown = changes.where((c) => c.action == 'unknown').map((c) => c.partLabel).toList();
+
+    return GlassPanel(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (moves.isEmpty)
+          const Text('Your figure is already in this pose. Fine-tune it with the reference photo.',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5))
+        else
+          for (final (i, c) in moves.indexed) ...[
+            if (i > 0) Divider(height: 1, color: Colors.white.withValues(alpha: .16)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: c.priority == 'high' ? AppColors.yellow : AppColors.chalk,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.line, width: 2),
+                  ),
+                  child: Text('${i + 1}', style: const TextStyle(color: AppColors.line, fontWeight: FontWeight.w800, fontSize: 13)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(c.sentence, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+                    if (c.current != null && c.target != null)
+                      Text('Now about ${c.current}°, target ${c.target}°',
+                          style: const TextStyle(fontSize: 12.5, color: AppColors.mute)),
+                  ]),
+                ),
+                if (c.priority == 'high')
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8, top: 2),
+                    child: Text('BIG MOVE', style: TextStyle(fontFamily: 'BowlbyOne', fontSize: 11, color: AppColors.yellow)),
+                  ),
+              ]),
+            ),
+          ],
+        if (kept.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text('Already in place: ${kept.join(', ')}', style: const TextStyle(fontSize: 13, color: Color(0xFFE2E5FF))),
+        ],
+        if (unknown.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text('Not visible in your photo: ${unknown.join(', ')}. Use the reference steps for these.',
+              style: const TextStyle(fontSize: 13, color: Color(0xFFE2E5FF))),
+        ],
+      ]),
     );
   }
 }

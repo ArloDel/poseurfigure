@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import 'helpers.dart';
 
+/// An app whose history holds analysis a1, offering AI visuals, with pose 1 recommended.
+TestApp visualsApp() => TestApp(history: [analysisResult('a1', visuals: true, recommendations: [recJson(1, 1)])]);
+
 Future<TestApp> openPose(WidgetTester tester, String location) async {
-  final app = TestApp();
+  final app = visualsApp();
   await app.pump(tester);
   GoRouter.of(tester.element(find.byType(Scaffold).first)).push(location);
   await tester.pumpAndSettle();
@@ -43,6 +46,15 @@ void main() {
     expect(find.text('Make AI visual'), findsNothing);
   });
 
+  testWidgets('no AI visual section when the server does not offer them', (tester) async {
+    final app = TestApp(history: [analysisResult('a2', recommendations: [recJson(1, 1)])]);
+    await app.pump(tester);
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).push('/poses/1?analysis=a2');
+    await tester.pumpAndSettle();
+    await scrollTo(tester, find.textContaining('Photo: "Ichigo"'));
+    expect(find.text('Make AI visual'), findsNothing);
+  });
+
   testWidgets('nothing is sent unless the user agrees', (tester) async {
     final app = await openPose(tester, '/poses/1?analysis=a1');
     await scrollTo(tester, find.text('Make AI visual'));
@@ -71,7 +83,7 @@ void main() {
   });
 
   testWidgets('a pending visual is polled until it is ready, and a rejected one says so', (tester) async {
-    final app = TestApp();
+    final app = visualsApp();
     app.visuals.first = FakeVisualRepository.visual('pending', 'unvalidated');
     app.visuals.later.add(FakeVisualRepository.visual('generated', 'rejected', provider: 'real'));
     await app.pump(tester);
@@ -89,7 +101,7 @@ void main() {
   });
 
   testWidgets('a failed visual explains and offers another try', (tester) async {
-    final app = TestApp();
+    final app = visualsApp();
     app.visuals.first = FakeVisualRepository.visual('failed', 'unvalidated', error: "We couldn't make this visual. Try again in a few minutes.");
     await app.pump(tester);
     GoRouter.of(tester.element(find.byType(Scaffold).first)).push('/poses/1?analysis=a1');

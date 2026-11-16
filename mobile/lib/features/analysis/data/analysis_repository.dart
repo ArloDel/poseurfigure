@@ -95,3 +95,8 @@ class AnalysisRepository {
 final analysisRepositoryProvider = Provider((ref) => AnalysisRepository(ref.watch(dioProvider)));
 
 final serverHealthProvider = FutureProvider<bool>((ref) => ref.watch(analysisRepositoryProvider).serverHealthy());
+
+/// One analysis, for screens opened from its results (pose detail reads its recommendation from here).
+final analysisResultProvider = FutureProvider.autoDispose.family<Analysis, String>(
+  (ref, id) => ref.watch(analysisRepositoryProvider).fetch(id),
+);
