@@ -90,7 +90,7 @@ python -m http.server 5180 --directory mobile/build/web
 
 Then open http://localhost:5180.
 
-**Screens.** Home (upload, server status), Discover (pose gallery with type, category and search filters), pose detail (steps by body region, joint warnings, save), Favorites, Profile (guest or account), History (with delete), sign-in / create account, and the analysis status screen. Guests can analyze and browse; favorites need an account.
+**Screens.** Home (upload, server status), Discover (pose gallery with type, category and search filters), pose detail (steps from your own figure when opened from an analysis, catalog steps by body region, joint warnings, save), Favorites (grouped by category; poses can also be saved straight from a recommendation card), Profile (guest or account), History (with delete), sign-in / create account, and the analysis status screen. Guests can analyze and browse; favorites need an account.
 
 ## Tests
 
@@ -247,6 +247,14 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] Development stub provider, so nothing is billed and no photo leaves the machine
 - [ ] A real image provider: not connected yet (needs a provider choice and an API key)
 
+## Sprint 8 status
+
+- [x] Steps from the user's own figure: each recommendation says which joints to move, which way and about how far ("bend the right knee about 40° more"), in the figure's own left and right, even for mirrored matches
+- [x] Joints that are already right are summed up, and joints the photo didn't show say so instead of guessing
+- [x] The catalog steps stay on the page as reference steps
+- [x] Save a recommended pose straight from its card (FAV-01)
+- [x] Favorites grouped by category, newest group first (FAV-04)
+
 Not yet built (later sprints): a real image provider, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset), a larger catalog (especially mecha).
 
 ## AI visuals
@@ -280,6 +288,10 @@ Sprint 5 baseline: Baseline (full report: [ai-service/reports/match_v1.md](ai-se
 | Mirrored photo flagged as mirrored | 19/20 |
 | Same top pose from labeled vs predicted keypoints | 8/18 (top-5 overlap 72%) |
 | Matching time | ~6 ms for one pose against a profile's catalog |
+
+**Steps from your figure (Sprint 8).** Each recommendation also carries `changes`: one entry per joint of the target pose, with `action` (`keep`, `bend`, `straighten`, `raise`, `lower`, `lift_leg`, `lower_leg`, `unknown`), the figure's `current` angle, the `target` and the `delta` between them. Differences under 12° count as `keep`, since keypoint noise is about that size. When the match is mirrored, the target is mirrored first, so the joint names are the user's own. A joint whose angle couldn't be measured is `unknown` and the app points to the catalog step instead. `changes` is empty when the ranking is `type_only`. The app rounds to 5° steps: angles from a 2D photo aren't more precise than that.
+
+Checked on eval photos in Docker: the figure's current angles in `changes` match the analysis, and unseen joints are `unknown`. Similarity and number of moves don't always agree: a figure with crossed arms can be a close match on legs and torso and still need both elbows straightened about 120°. The steps report that; the similarity score doesn't.
 
 Known limits: the catalog is small (only 3 mecha poses, since the pose model struggles with winged or flying mecha). Rankings are sensitive to keypoint errors because many poses score close together. When a figure's torso isn't readable the ranking falls back to `type_only` (Sprint 6) and the app says so. Five catalog photos are also eval_v1 photos.
 
