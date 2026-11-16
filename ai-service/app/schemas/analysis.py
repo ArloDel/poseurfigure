@@ -116,6 +116,9 @@ class Recommendation(BaseModel):
     # Why this pose is in the list, for the app's copy: close_to_current, few_changes, new_direction,
     # mirror, different_category, check_joints.
     reasons: list[str] = []
+    # What to change on the user's figure to reach this pose, joint by joint (empty for basis "type_only").
+    # action: keep, bend, straighten, raise, lower, lift_leg, lower_leg, unknown.
+    changes: list[dict] = []
 
 
 class RecommendResponse(BaseModel):

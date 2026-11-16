@@ -16,6 +16,7 @@ from __future__ import annotations
 import math
 
 from app.schemas.analysis import Recommendation, RecommendRequest, RecommendResponse, SkeletonProfile
+from app.services.pose_changes import changes
 from app.services.pose_matcher import _normalized, feasibility, match, to_view
 
 MATCHER_VERSION = "match-0.2"
@@ -87,6 +88,7 @@ def rank(request: RecommendRequest, profile: SkeletonProfile, strategy: str = "h
             components=m.components if basis == "pose" else {}, shared_joints=m.shared_joints,
             mirrored=m.mirrored and basis == "pose", warnings=f.warnings,
             reasons=_reasons(sim, m.mirrored, f.warnings, new_cat, basis),
+            changes=changes(query, r["view"], m.mirrored) if basis == "pose" else [],
         ))
     return RecommendResponse(matcher_version=MATCHER_VERSION if strategy == "hybrid" else "match-0.1",
                              profile=profile.profile, basis=basis, results=results,
