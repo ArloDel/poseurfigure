@@ -1,0 +1,32 @@
+# Production image: PHP-FPM behind nginx, code baked in (no bind mounts), no dev dependencies.
+# The dev image (Dockerfile) keeps the built-in server and live code for docker-compose.yml.
+# Base images are pinned by digest; update them on purpose, not by accident.
+FROM composer@sha256:0c8e663f14c94d07b3c45b175c51f5a14718508f21fe4dd7e54f09488dd0ed71 AS composer
+
+FROM php@sha256:212c3c9fc09d58f6b1a12b0b4a6a90fd44a209299a67633c2bccbc1dd53c55e0
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends unzip libpq-dev libzip-dev postgresql-client libfcgi-bin \
+        libpng-dev libjpeg62-turbo-dev libwebp-dev \
+    && docker-php-ext-configure gd --with-jpeg --with-webp \
+    && docker-php-ext-install pdo_pgsql pcntl zip gd opcache \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /var/lib/apt/lists/* /tmp/pear
+
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+COPY docker/php-prod.ini /usr/local/etc/php/conf.d/figurepose.ini
+COPY docker/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-figurepose.conf
+
+WORKDIR /var/www
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-dev --no-scripts --no-autoloader --prefer-dist
+COPY . .
+RUN rm -f .env \
+    && composer dump-autoload --optimize --classmap-authoritative --no-dev \
+    && chmod +x docker/entrypoint-prod.sh \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+EXPOSE 9000
+ENTRYPOINT ["docker/entrypoint-prod.sh"]
+CMD ["php-fpm"]
