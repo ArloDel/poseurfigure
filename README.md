@@ -118,6 +118,28 @@ docker compose exec api php artisan test
 docker compose exec ai python -m pytest
 ```
 
+**End-to-end journey.** With a stack running, one script walks the main user journey through the API: health, a refused photo, a guest analysis with recommendations and steps, another device locked out, pose detail, show different poses, an AI visual when the server offers them, sign-up moving the guest's analysis to the account, favorites, and deleting the analysis. It uses only Python's standard library.
+
+```bash
+python tests/e2e/journey.py
+```
+
+Add `--base http://localhost:8080/api/v1` for the production-like stack. It leaves a `journey-…@example.test` account behind each run.
+
+**CI.** `.github/workflows/ci.yml` runs the AI, backend and mobile tests (plus `flutter analyze`) on every push to `main` and every pull request. No models are downloaded there.
+
+## Production-like stack
+
+`docker-compose.prod.yml` runs the app the way a server would, on this machine, next to the dev stack: nginx serving the web app, the API (PHP-FPM) and catalog photos from one address, code baked into the images, no dev dependencies, JSON logs with request IDs, image versions pinned by digest, and only nginx publishing a port. AI visuals are off. Nothing goes online.
+
+```bash
+cp .env.prod.example .env.prod      # then fill in the secrets, see the comments in the file
+sh infrastructure/scripts/build-web.sh
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+Open http://localhost:8080. Stop it with `docker compose -f docker-compose.prod.yml --env-file .env.prod down` (add `-v` to delete its data). Deploying to a server, backups and what is still missing: [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ## API
 
 All endpoints are under `/api/v1` and return `{ "success": true, "data": ... }`.
@@ -254,6 +276,14 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] The catalog steps stay on the page as reference steps
 - [x] Save a recommended pose straight from its card (FAV-01)
 - [x] Favorites grouped by category, newest group first (FAV-04)
+
+## Sprint 9 status
+
+- [x] End-to-end journey check (`tests/e2e/journey.py`), passing on the dev stack and the production-like stack
+- [x] CI for the AI service, backend and mobile app
+- [x] Production-like stack: nginx + PHP-FPM, web app on the same address as the API, pinned images, health checks, JSON logs with request IDs
+- [x] Database backup script and a deployment checklist ([docs/DEPLOY.md](docs/DEPLOY.md))
+- [ ] Online deployment: not wanted yet; needs a server, a domain and TLS
 
 Not yet built (later sprints): a real image provider, Google sign-in, crop and rotate before upload, a figure-specific keypoint model (needs a training dataset), a larger catalog (especially mecha).
 
