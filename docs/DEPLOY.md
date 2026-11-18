@@ -60,4 +60,4 @@ Laravel log line of that request, so a user's report can be traced:
 - A firewall that allows only 80/443 (and SSH).
 - Off-site copies of the database dumps and photos.
 - Uptime monitoring on `/api/v1/health`.
-- AI visuals stay off (`GENERATION_ENABLED=false`) until a real image provider is connected.
+- AI visuals: off by default. To turn them on, set `GENERATION_ENABLED=true`, `AI_GENERATION_PROVIDER=openai`, `GENERATION_PROVIDER_NAME=OpenAI` and `OPENAI_API_KEY` in `.env.prod`, and set a spending limit in the OpenAI dashboard first. Check OpenAI's current data-use terms for API images and say what they are in the privacy notice.

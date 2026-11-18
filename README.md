@@ -267,7 +267,7 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] Images are always labelled AI-generated in the API and the app, apart from catalog references
 - [x] Limits: one visual per analysis + pose (repeats are free), 5 requests per minute, 10 new visuals per day
 - [x] Development stub provider, so nothing is billed and no photo leaves the machine
-- [ ] A real image provider: not connected yet (needs a provider choice and an API key)
+- [x] A real image provider: OpenAI (added after Sprint 9, see "AI visuals")
 
 ## Sprint 8 status
 
@@ -292,9 +292,26 @@ Not yet built (later sprints): a real image provider, Google sign-in, crop and r
 Optional pictures of the user's own figure in a recommended pose (PRD 8.6). The catalog steps stay the dependable guidance; a visual is extra.
 
 - **Consent first.** The app shows what is sent and where; the API refuses without `consent: true` and records when consent was given.
-- **Validation.** The detector and pose model read the generated image. It is `validated` only if overall similarity to the target is at least 0.85 and no joint angle is off by more than 40°. The second rule matters: averages hide one wrong joint (a standing figure scores about 0.89 against a crouch). Validation means the picture shows the pose, not that the figure can hold it.
-- **Providers.** `AI_GENERATION_PROVIDER` in the AI service: `none` (feature off, default) or `stub` (development: returns the original photo with a banner). To connect a real service, add a class with `name` and `generate()` to `ai-service/app/services/image_generator.py`, register it in `PROVIDERS`, and put its API key in `.env`. Set `GENERATION_ENABLED=true` on the backend only when a provider is configured. Compose enables the stub for development.
-- **Backend settings.** `GENERATION_ENABLED` (false), `GENERATION_DAILY_LIMIT` (10), `GENERATION_URL_TTL_MINUTES` (15). AI service: `AI_VALIDATION_MIN_SIMILARITY` (0.85), `AI_VALIDATION_MAX_JOINT_ERROR` (40).
+- **Validation.** The detector and pose model read the generated image. It is `validated` only if overall similarity to the target is at least 0.85 and no joint angle is off by more than 40°. The second rule matters: averages hide one wrong joint (a standing figure scores about 0.89 against a crouch). Image models sometimes draw the pose mirrored, so the flipped result is checked too; one that only matches flipped is `validated` and the API says `shown_mirrored`. Validation means the picture shows the pose, not that the figure can hold it.
+- **Providers.** `AI_GENERATION_PROVIDER` in the AI service:
+  - `none`: feature off (default outside the dev stack).
+  - `stub`: development. Returns the original photo with a banner; nothing leaves the machine, nothing is billed. The dev stack's default.
+  - `openai`: OpenAI's image edit API. It gets the user's photo, the catalog photo of the target pose (flipped for a mirrored request) and a stick figure of the pose, left side blue, right side orange. Every visual is billed.
+- **Using OpenAI in the dev stack.** In the root `.env` (git-ignored): `AI_GENERATION_PROVIDER=openai`, `GENERATION_PROVIDER_NAME=OpenAI`, `OPENAI_API_KEY=...`; optional `OPENAI_IMAGE_MODEL` (`gpt-image-1-mini`) and `OPENAI_IMAGE_QUALITY` (`low`, `medium`, `high`; cost and time grow with it). Then `docker compose up -d ai api worker`. Set a monthly spending limit in the OpenAI dashboard.
+- **Backend settings.** `GENERATION_ENABLED` (false), `GENERATION_PROVIDER_NAME` (shown in the consent sheet), `GENERATION_DAILY_LIMIT` (10), `GENERATION_URL_TTL_MINUTES` (15), `GENERATION_REQUEST_TIMEOUT` (110 s). The job times out at 120 s, so the queue's `REDIS_QUEUE_RETRY_AFTER` is 150 s in compose: a slow visual is never started, and billed, twice. AI service: `AI_GENERATION_TIMEOUT` (75 s), `AI_VALIDATION_MIN_SIMILARITY` (0.85), `AI_VALIDATION_MAX_JOINT_ERROR` (40).
+- **Failures.** The provider being down or slow: one retry, then "Try again in a few minutes". The provider declining the photo (moderation): no retry, and the app says the photo was declined.
+
+**OpenAI, first measurements** (`gpt-image-1-mini`, medium quality, eval photos, November 2026). A handful of runs, not a benchmark:
+
+| Photo → target pose | Result |
+|---|---|
+| Hunter figure → Shield stride | `validated`: similarity 0.95, worst joint 17° off. Figure kept recognizable |
+| Hunter figure → Brawler guard | `rejected`: a different fighting pose (right knee 85° off). Validation caught it |
+| Hunter figure → Brawler guard (first test, photo + reference only, no stick figure) | Matched only mirrored |
+| Bounty hunter aiming a pistol → Fencing lunge | Declined by OpenAI's moderation, also without the reference photo |
+| Group of Marvel figures → Victory dance | Declined by OpenAI's moderation |
+
+Each visual took 17 to 24 s plus about 10 s of validation. So: the figure's look is kept well, the pose is right some of the time and validation tells which, and photos of figures with weapons or of well-known characters may be declined. Measure on more photos before relying on it.
 
 With the stub, a visual for a pose the figure is already in comes back `validated`, and one for a different pose comes back `rejected`: the stub never changes the pose, and validation notices.
 
