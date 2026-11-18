@@ -3,6 +3,8 @@ uvicorn[standard]>=0.30,<1.0
 python-multipart>=0.0.9
 pydantic-settings>=2.4,<3.0
 pillow>=11.0
+# Image provider calls (AI visuals).
+httpx>=0.27,<1.0
 numpy>=2.0,<3.0
 # Models (Sprint 4). torch is installed separately from the CPU-only index; see Dockerfile and README.
 transformers==5.22.2

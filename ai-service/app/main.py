@@ -9,13 +9,14 @@ from functools import lru_cache
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from PIL import Image
 
 from app.config import Settings, get_settings
 from app.schemas.analysis import (
     AnalyzeResponse, GenerateRequest, GenerateResponse, RecommendRequest, RecommendResponse, SkeletonProfile,
 )
 from app.services.image_quality import UnreadableImage, assess, load_image
-from app.services.image_generator import ImageGenerator, build_generator, build_prompt, validate
+from app.services.image_generator import GenerationFailed, ImageGenerator, build_generator, build_prompt, validate
 from app.services.pipeline import Pipeline
 from app.services.pose_matcher import mirror, to_view
 from app.services.recommender import rank
@@ -54,7 +55,8 @@ def get_pipeline() -> Pipeline | None:
 
 
 def get_generator() -> ImageGenerator | None:
-    return build_generator(get_settings().generation_provider)
+    s = get_settings()
+    return build_generator(s.generation_provider, s)
 
 
 @asynccontextmanager
@@ -113,6 +115,7 @@ def recommend_poses(request: RecommendRequest, settings: Settings = Depends(get_
 async def generate_visual(
     image: UploadFile = File(...),
     payload: str = Form(...),
+    reference: UploadFile | None = File(None),
     settings: Settings = Depends(get_settings),
     pipeline: Pipeline | None = Depends(get_pipeline),
     generator: ImageGenerator | None = Depends(get_generator),
@@ -137,18 +140,31 @@ async def generate_visual(
     except UnreadableImage as exc:
         raise HTTPException(422, str(exc)) from exc
 
+    # The catalog photo of the target pose, flipped along with the target when the user mirrors it.
+    ref_img = None
+    if reference is not None:
+        try:
+            ref_img = load_image(await reference.read(settings.max_upload_mb * 1024 * 1024))
+        except UnreadableImage as exc:
+            raise HTTPException(422, f"Reference: {exc}") from exc
+        if request.mirrored:
+            ref_img = ref_img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+
     target = to_view(request.target.keypoints, request.target.image_size)
     if request.mirrored:
         target = mirror(target)
     prompt = build_prompt(profile, request.instructions, request.mirrored)
 
-    def work():
-        result = generator.generate(source, prompt, target, profile).convert("RGB")
-        return result, validate(result, target, profile, pipeline, settings.validation_min_similarity,
-                                settings.validation_max_joint_error)
+    # The provider call is network-bound: it runs outside the inference slot, so analyses aren't kept waiting.
+    try:
+        result = (await run_in_threadpool(generator.generate, source, prompt, target, profile, ref_img)).convert("RGB")
+    except GenerationFailed as exc:
+        log.warning("generation failed: %s", exc)
+        raise HTTPException(502 if exc.retryable else 422, str(exc)) from exc
 
     async with _inference_slot:
-        result, validation = await run_in_threadpool(work)
+        validation = await run_in_threadpool(validate, result, target, profile, pipeline,
+                                             settings.validation_min_similarity, settings.validation_max_joint_error)
 
     buf = io.BytesIO()
     result.save(buf, "JPEG", quality=88)

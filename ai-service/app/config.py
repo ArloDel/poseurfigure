@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     validation_min_similarity: float = 0.85
     # ...and no joint angle both poses show is off by more than this many degrees.
     validation_max_joint_error: float = 40.0
+    # Seconds to wait for the provider. Keep below the backend's AI_SERVICE timeout for /v1/generate.
+    generation_timeout: float = 75.0
+    # Provider "openai". The key comes from the environment (AI_OPENAI_API_KEY), never from the repository.
+    openai_api_key: str = ""
+    openai_image_model: str = "gpt-image-1-mini"
+    openai_image_quality: str = "medium"  # low, medium, high: cost and time grow with it
+    openai_image_size: str = "1024x1536"  # portrait, like most figure photos
 
 
 @lru_cache

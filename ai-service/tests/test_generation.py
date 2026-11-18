@@ -39,7 +39,8 @@ class EchoGenerator:
     """Returns a square image; the fake pose model then 'finds' the STANDING pose in it."""
     name = "echo"
 
-    def generate(self, source, prompt, target, profile):
+    def generate(self, source, prompt, target, profile, reference=None):
+        self.reference = reference
         self.prompt = prompt
         return Image.new("RGB", (800, 800), "white")
 
