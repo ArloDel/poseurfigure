@@ -185,7 +185,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Kamen Rider Nigo",
+   "variant": "The Next",
+   "franchise": "Kamen Rider"
   },
   {
    "slug": "fencing-lunge",
@@ -338,7 +341,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": null,
+   "variant": null,
+   "franchise": null
   },
   {
    "slug": "shield-guard",
@@ -457,7 +463,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Captain America",
+   "variant": "classic suit",
+   "franchise": "Marvel"
   },
   {
    "slug": "overhead-blade",
@@ -626,7 +635,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Gladiator Hulk",
+   "variant": null,
+   "franchise": "Marvel"
   },
   {
    "slug": "shield-stride",
@@ -795,7 +807,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Magneto",
+   "variant": null,
+   "franchise": "Marvel"
   },
   {
    "slug": "kneeling-aim",
@@ -948,7 +963,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Jango Fett",
+   "variant": null,
+   "franchise": "Star Wars"
   },
   {
    "slug": "brawler-guard",
@@ -1133,7 +1151,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Apocalypse",
+   "variant": null,
+   "franchise": "Marvel"
   },
   {
    "slug": "stop-hand",
@@ -1318,7 +1339,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Superman",
+   "variant": "classic suit",
+   "franchise": "DC Comics"
   },
   {
    "slug": "crouched-ready",
@@ -1503,7 +1527,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Robin",
+   "variant": null,
+   "franchise": "DC Comics"
   },
   {
    "slug": "victory-dance",
@@ -1695,7 +1722,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Darth Vader",
+   "variant": "Stormtrooper disguise",
+   "franchise": "Star Wars"
   },
   {
    "slug": "ledge-lookout",
@@ -1880,7 +1910,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Levi Ackerman",
+   "variant": null,
+   "franchise": "Attack on Titan"
   },
   {
    "slug": "sword-draw",
@@ -2057,7 +2090,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Asuka Langley Soryu",
+   "variant": null,
+   "franchise": "Neon Genesis Evangelion"
   },
   {
    "slug": "blade-raise",
@@ -2217,7 +2253,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Kamen Rider Blades",
+   "variant": "Lion Senki",
+   "franchise": "Kamen Rider Saber"
   },
   {
    "slug": "reclining-rest",
@@ -2400,7 +2439,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Rei Ayanami",
+   "variant": "Plugsuit",
+   "franchise": "Neon Genesis Evangelion"
   },
   {
    "slug": "shy-glance",
@@ -2583,7 +2625,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Nozomi Tojo",
+   "variant": "casual outfit with beret",
+   "franchise": "Love Live!"
   },
   {
    "slug": "hunter-stance",
@@ -2759,7 +2804,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Samus Aran",
+   "variant": "Zero Suit",
+   "franchise": "Metroid"
   },
   {
    "slug": "blade-swing",
@@ -2951,7 +2999,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Black Rock Shooter",
+   "variant": null,
+   "franchise": "Black Rock Shooter"
   },
   {
    "slug": "cheerful-wave",
@@ -3096,7 +3147,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Asuna Yuuki",
+   "variant": null,
+   "franchise": "Sword Art Online"
   },
   {
    "slug": "commander-stance",
@@ -3302,7 +3356,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Optimus Prime",
+   "variant": null,
+   "franchise": "Transformers"
   },
   {
    "slug": "rifle-aim",
@@ -3494,7 +3551,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Sinanju",
+   "variant": null,
+   "franchise": "Mobile Suit Gundam Unicorn"
   },
   {
    "slug": "boost-dash",
@@ -3628,7 +3688,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "GP01 Zephyranthes",
+   "variant": "Full Burnern",
+   "franchise": "Mobile Suit Gundam 0083: Stardust Memory"
   },
   {
    "slug": "wing-spread",
@@ -3819,7 +3882,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Gundam Astray Red Frame",
+   "variant": "Powered Red / flight unit custom",
+   "franchise": "Mobile Suit Gundam SEED Astray"
   },
   {
    "slug": "sword-ready",
@@ -3953,7 +4019,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Gundam Astray Red Frame",
+   "variant": "Red Dragon",
+   "franchise": "Mobile Suit Gundam SEED Astray"
   },
   {
    "slug": "forward-punch",
@@ -4113,7 +4182,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Nobel Gundam",
+   "variant": "Berserker Mode",
+   "franchise": "Mobile Fighter G Gundam"
   },
   {
    "slug": "shadow-guard",
@@ -4247,7 +4319,10 @@
     "detector": "owlv2-base-patch16-ensemble@cfd3195",
     "classifier": "siglip2-base-patch16-224@75de2d5",
     "pose": "vitpose-base-simple@a93ac0c"
-   }
+   },
+   "character": "Gundam AGE-2 Dark Hound",
+   "variant": null,
+   "franchise": "Mobile Suit Gundam AGE"
   }
  ]
 }

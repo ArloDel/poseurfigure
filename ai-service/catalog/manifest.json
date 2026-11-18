@@ -15,7 +15,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/7747793@N08/2510857921",
     "file": "design/img/rider-stance.jpg"
-   }
+   },
+   "character": "Kamen Rider Nigo",
+   "variant": "The Next",
+   "franchise": "Kamen Rider",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "fencing-lunge",
@@ -30,7 +34,11 @@
     "license": "CC BY-SA 2.0",
     "source": "https://www.flickr.com/photos/42405591@N02/20980149636",
     "file": "design/img/skeleton-lunge.jpg"
-   }
+   },
+   "character": "",
+   "variant": "",
+   "franchise": "",
+   "character_source": "ai:gpt-5.4:low"
   },
   {
    "slug": "shield-guard",
@@ -45,7 +53,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/15066420@N00/7016143189",
     "file": "design/img/shield-guard.jpg"
-   }
+   },
+   "character": "Captain America",
+   "variant": "classic suit",
+   "franchise": "Marvel",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "overhead-blade",
@@ -60,7 +72,11 @@
     "license": "CC BY-SA 2.0",
     "source": "https://www.flickr.com/photos/27745117@N00/40591015670",
     "url": "https://live.staticflickr.com/882/40591015670_ae6aea9f1d_b.jpg"
-   }
+   },
+   "character": "Gladiator Hulk",
+   "variant": "",
+   "franchise": "Marvel",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "shield-stride",
@@ -75,7 +91,11 @@
     "license": "CC BY-SA 2.0",
     "source": "https://www.flickr.com/photos/27745117@N00/25218024927",
     "url": "https://live.staticflickr.com/4663/25218024927_c5940fc64f_b.jpg"
-   }
+   },
+   "character": "Magneto",
+   "variant": "",
+   "franchise": "Marvel",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "kneeling-aim",
@@ -90,7 +110,11 @@
     "license": "CC BY-SA 2.0",
     "source": "https://www.flickr.com/photos/42405591@N02/24997910526",
     "url": "https://live.staticflickr.com/1717/24997910526_d64b23f99e_b.jpg"
-   }
+   },
+   "character": "Jango Fett",
+   "variant": "",
+   "franchise": "Star Wars",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "brawler-guard",
@@ -111,7 +135,11 @@
      0.5,
      1.0
     ]
-   }
+   },
+   "character": "Apocalypse",
+   "variant": "",
+   "franchise": "Marvel",
+   "character_source": "ai:gpt-5.4:medium"
   },
   {
    "slug": "stop-hand",
@@ -132,7 +160,11 @@
      1.0,
      1.0
     ]
-   }
+   },
+   "character": "Superman",
+   "variant": "classic suit",
+   "franchise": "DC Comics",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "crouched-ready",
@@ -153,7 +185,11 @@
      0.95,
      1.0
     ]
-   }
+   },
+   "character": "Robin",
+   "variant": "",
+   "franchise": "DC Comics",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "victory-dance",
@@ -174,7 +210,11 @@
      0.85,
      0.94
     ]
-   }
+   },
+   "character": "Darth Vader",
+   "variant": "Stormtrooper disguise",
+   "franchise": "Star Wars",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "ledge-lookout",
@@ -189,7 +229,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/126729337@N03/15759305548",
     "file": "design/img/levi-ledge.jpg"
-   }
+   },
+   "character": "Levi Ackerman",
+   "variant": "",
+   "franchise": "Attack on Titan",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "sword-draw",
@@ -204,7 +248,11 @@
     "license": "CC0 1.0",
     "source": "https://www.flickr.com/photos/38451115@N04/11197195073",
     "file": "design/img/claymore-draw.jpg"
-   }
+   },
+   "character": "Asuka Langley Soryu",
+   "variant": "",
+   "franchise": "Neon Genesis Evangelion",
+   "character_source": "ai:gpt-5.4:medium"
   },
   {
    "slug": "blade-raise",
@@ -219,7 +267,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/7747793@N08/1148859449",
     "file": "design/img/knight-sword.jpg"
-   }
+   },
+   "character": "Kamen Rider Blades",
+   "variant": "Lion Senki",
+   "franchise": "Kamen Rider Saber",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "reclining-rest",
@@ -234,7 +286,11 @@
     "license": "CC BY-SA 2.0",
     "source": "https://www.flickr.com/photos/37865518@N00/2669714142",
     "url": "https://live.staticflickr.com/3288/2669714142_1f731023b0.jpg"
-   }
+   },
+   "character": "Rei Ayanami",
+   "variant": "Plugsuit",
+   "franchise": "Neon Genesis Evangelion",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "shy-glance",
@@ -249,7 +305,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/42438962@N05/24717676334",
     "url": "https://live.staticflickr.com/1449/24717676334_16dfdafba6_b.jpg"
-   }
+   },
+   "character": "Nozomi Tojo",
+   "variant": "casual outfit with beret",
+   "franchise": "Love Live!",
+   "character_source": "ai:gpt-5.4:medium"
   },
   {
    "slug": "hunter-stance",
@@ -264,7 +324,11 @@
     "license": "CC BY-SA 2.0",
     "source": "https://www.flickr.com/photos/88444437@N00/6754828855",
     "url": "https://live.staticflickr.com/7173/6754828855_41b4e91eda.jpg"
-   }
+   },
+   "character": "Samus Aran",
+   "variant": "Zero Suit",
+   "franchise": "Metroid",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "blade-swing",
@@ -279,7 +343,11 @@
     "license": "CC BY-SA 2.0",
     "source": "https://www.flickr.com/photos/88444437@N00/6085921082",
     "url": "https://live.staticflickr.com/6085/6085921082_5e923e6932_b.jpg"
-   }
+   },
+   "character": "Black Rock Shooter",
+   "variant": "",
+   "franchise": "Black Rock Shooter",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "cheerful-wave",
@@ -294,7 +362,11 @@
     "license": "CC BY-SA 2.0",
     "source": "https://www.flickr.com/photos/88444437@N00/5164188677",
     "url": "https://live.staticflickr.com/4090/5164188677_2d53e4dba0.jpg"
-   }
+   },
+   "character": "Asuna Yuuki",
+   "variant": "",
+   "franchise": "Sword Art Online",
+   "character_source": "ai:gpt-5.4:medium"
   },
   {
    "slug": "commander-stance",
@@ -309,7 +381,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/76671243@N00/543625766",
     "file": "design/img/optimus-stance.jpg"
-   }
+   },
+   "character": "Optimus Prime",
+   "variant": "",
+   "franchise": "Transformers",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "rifle-aim",
@@ -324,7 +400,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/12452841@N00/9486175920",
     "file": "design/img/sinanju-rifle.jpg"
-   }
+   },
+   "character": "Sinanju",
+   "variant": "",
+   "franchise": "Mobile Suit Gundam Unicorn",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "boost-dash",
@@ -339,7 +419,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/34017082@N06/13052375705",
     "file": "design/img/gundam-boost.jpg"
-   }
+   },
+   "character": "GP01 Zephyranthes",
+   "variant": "Full Burnern",
+   "franchise": "Mobile Suit Gundam 0083: Stardust Memory",
+   "character_source": "ai:gpt-5.4:medium"
   },
   {
    "slug": "wing-spread",
@@ -354,7 +438,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/12452841@N00/9483375343",
     "url": "https://live.staticflickr.com/7304/9483375343_4e502239c1_b.jpg"
-   }
+   },
+   "character": "Gundam Astray Red Frame",
+   "variant": "Powered Red / flight unit custom",
+   "franchise": "Mobile Suit Gundam SEED Astray",
+   "character_source": "ai:gpt-5.4:medium"
   },
   {
    "slug": "sword-ready",
@@ -369,7 +457,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/12452841@N00/9483375227",
     "url": "https://live.staticflickr.com/2849/9483375227_76cd1c71cc_b.jpg"
-   }
+   },
+   "character": "Gundam Astray Red Frame",
+   "variant": "Red Dragon",
+   "franchise": "Mobile Suit Gundam SEED Astray",
+   "character_source": "ai:gpt-5.4:high"
   },
   {
    "slug": "forward-punch",
@@ -384,7 +476,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/12452841@N00/9483374901",
     "url": "https://live.staticflickr.com/3722/9483374901_f0cf3e607b_b.jpg"
-   }
+   },
+   "character": "Nobel Gundam",
+   "variant": "Berserker Mode",
+   "franchise": "Mobile Fighter G Gundam",
+   "character_source": "ai:gpt-5.4:medium"
   },
   {
    "slug": "shadow-guard",
@@ -399,7 +495,11 @@
     "license": "CC BY 2.0",
     "source": "https://www.flickr.com/photos/12452841@N00/9483375443",
     "url": "https://live.staticflickr.com/7320/9483375443_9ff459eac3_b.jpg"
-   }
+   },
+   "character": "Gundam AGE-2 Dark Hound",
+   "variant": "",
+   "franchise": "Mobile Suit Gundam AGE",
+   "character_source": "ai:gpt-5.4:medium"
   }
  ]
 }

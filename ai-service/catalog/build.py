@@ -1,6 +1,7 @@
 """Builds the pose catalog from catalog/manifest.json.
 
 usage (from ai-service/):  python -m catalog.build [--preview <dir>]
+then:                      python -m catalog.enrich   (appearance embeddings for pose ideas)
 
 For every pose: fetch the reference photo (or read it from design/img), crop if the manifest says so,
 save it to backend/public/catalog/<slug>.jpg, run the same detector and pose model as user photos,
@@ -121,6 +122,10 @@ def main() -> None:
             "instructions": build_instructions(pose.joint_angles, pose.keypoints, aspect),
             "constraints": constraints(pose.joint_angles, profile.joints),
             "models": pipe.models,
+            # Named by catalog.enrich (or by hand) in the manifest; kept across rebuilds.
+            "character": entry.get("character") or None,
+            "variant": entry.get("variant") or None,
+            "franchise": entry.get("franchise") or None,
         })
         if args.preview:
             preview(im, pose, Path(args.preview) / f"{entry['slug']}.jpg")
