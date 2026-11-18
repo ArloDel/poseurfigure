@@ -164,6 +164,8 @@ Access: **open** needs nothing, **owner** needs a bearer token or `X-Guest-Key`,
 | POST | `/analyses/{analysis_id}/recommendations` | owner | Show different poses: replaces the list with poses not shown yet |
 | POST | `/poses/{id}/generate` | owner | `analysis_id`, `consent: true`, optional `mirrored`. Starts an AI visual; repeating returns the same one |
 | GET | `/generated-images/{id}` | owner | Status (`pending`, `generated`, `failed`), validation (`validated`, `rejected`, `unvalidated`) and an expiring image link |
+| POST | `/analyses/{analysis_id}/character/recognize` | owner | `consent: true`. Suggests the character from the photo (vision model) and ranks pose ideas again with it first |
+| PUT | `/analyses/{analysis_id}/character` | owner | `name` (or `null` to clear). The user names or corrects the character |
 | POST | `/analyses/{analysis_id}/profile` | owner | `figure_profile_id`. The user confirms or corrects the figure type; the photo is analyzed again with it |
 | GET | `/favorites` | account | Saved catalog poses |
 | POST | `/favorites` | account | `pose_id`. Saving twice keeps one favorite |
@@ -268,6 +270,8 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] Limits: one visual per analysis + pose (repeats are free), 5 requests per minute, 10 new visuals per day
 - [x] Development stub provider, so nothing is billed and no photo leaves the machine
 - [x] A real image provider: OpenAI (added after Sprint 9, see "AI visuals")
+- [x] Pose ideas: character recognition, figure-look similarity, grouped grid (after Sprint 9, see "Pose ideas")
+- [ ] Pose ideas from web image search (needs a search API choice and key)
 
 ## Sprint 8 status
 
@@ -314,6 +318,17 @@ Optional pictures of the user's own figure in a recommended pose (PRD 8.6). The 
 Each visual took 17 to 24 s plus about 10 s of validation. So: the figure's look is kept well, the pose is right some of the time and validation tells which, and photos of figures with weapons or of well-known characters may be declined. Measure on more photos before relying on it.
 
 With the stub, a visual for a pose the figure is already in comes back `validated`, and one for a different pose comes back `rejected`: the stub never changes the pose, and validation notices.
+
+## Pose ideas
+
+The product's core idea: photograph a figure (often in its default pose) and get pictures of **that character first, then figures that look like it**, in poses worth copying. Each idea still comes with steps from the figure's own pose ("raise the right arm about 90°").
+
+- **The figure's look.** The analysis stores a SigLIP 2 image embedding of the figure's crop (`pose_data.appearance`). Catalog figures get the same embedding from `python -m catalog.enrich` (`shared/catalog/appearance.json`).
+- **The character.** The user taps "Recognize it" (their photo goes to OpenAI after they agree; `AI_IDENTIFY_PROVIDER=openai`, `CHARACTER_RECOGNITION_ENABLED=true`) or types the name. It is always shown as editable. On a black-suit Spider-Man photo, `gpt-5.4-mini` answered "Venom" (the stand has a Venom logo); `gpt-5.4` named it correctly twice, so it is the default (`OPENAI_VISION_MODEL`). Catalog characters come from `catalog.enrich --identify` and are kept, reviewable, in the manifest.
+- **Ranking** (`ai-service/app/services/inspiration.py`, `POST /v1/inspire`): same character first; then score = 0.6 × look + 0.25 × how new the pose is + 0.15 × feasibility, with poses spread out so near-duplicates don't fill the grid. "How new" is the larger of overall pose difference and the biggest single joint change. Results carry `group`: `same_character`, `similar_look` (look ≥ 0.7) or `more`.
+- **App.** A character card above the results, and the ideas as a grid in those three groups. Analyses made before this keep the older pose-matched list.
+
+**Measured on a black-suit Spider-Man photo** (November 2026): type humanoid (0.83), 15 of 16 joints, character named correctly by `gpt-5.4`. The catalog has no Spider-Man, and the closest looks (Darth Vader, Magneto, Superman) score 0.68, under the 0.7 "looks alike" line, so every idea landed in "More ideas" and the app says so. **The catalog is the limit**: 20 poses, 9 humanoid. Web image search (next step) and a bigger own collection are what make "same character first" work. The 0.7 line also needs tuning once the collection has several photos of one character.
 
 ## Pose catalog and matching
 
