@@ -58,6 +58,9 @@ class AnalysisResource extends JsonResource
             // Whether the app may offer "Make AI visual" for this analysis' recommendations.
             'ai_visuals_available' => $this->when($this->status === AnalysisStatus::Completed,
                 (bool) config('figurepose.generation.enabled')),
+            // Named in the consent sheet before the user sends their photo. Null: "an image service".
+            'ai_visuals_provider' => $this->when($this->status === AnalysisStatus::Completed,
+                config('figurepose.generation.provider_name')),
             'error' => $this->when($this->status === AnalysisStatus::Failed, fn () => [
                 'code' => $this->failure_code,
                 'message' => $this->failure_message,

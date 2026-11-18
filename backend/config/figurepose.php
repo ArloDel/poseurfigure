@@ -21,6 +21,11 @@ return [
         'daily_limit' => (int) env('GENERATION_DAILY_LIMIT', 10),
         // Generated images are private; the app gets a link that expires (PRD 15.1).
         'url_ttl_minutes' => (int) env('GENERATION_URL_TTL_MINUTES', 15),
+        // Who makes the images, shown to the user before they agree to send their photo. Null = "an image service".
+        'provider_name' => env('GENERATION_PROVIDER_NAME'),
+        // Seconds to wait for /v1/generate: the provider (AI_GENERATION_TIMEOUT there, 75 s) plus validation.
+        // The job's timeout and the queue's retry_after must stay above it (see GeneratePoseImage).
+        'request_timeout' => (int) env('GENERATION_REQUEST_TIMEOUT', 110),
     ],
 
     'recommendations' => [

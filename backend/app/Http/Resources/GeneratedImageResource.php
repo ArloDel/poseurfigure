@@ -26,8 +26,12 @@ class GeneratedImageResource extends JsonResource
             'source' => 'ai_generated',
             'provider' => $this->provider,
             'mirrored' => $this->mirrored,
+            // The image model drew the pose with left and right swapped, and it matches that way.
+            'shown_mirrored' => (bool) ($this->details['validation']['mirrored'] ?? false),
             'validation_note' => match (true) {
                 ! $ready => null,
+                $this->validation_status === ValidationStatus::Validated && ($this->details['validation']['mirrored'] ?? false)
+                    => 'The pose in this image matches the target pose, mirrored left to right. It is not proof your figure can hold it.',
                 $this->validation_status === ValidationStatus::Validated => 'The pose in this image matches the target pose. It is not proof your figure can hold it.',
                 $this->validation_status === ValidationStatus::Rejected => "This image doesn't show the target pose reliably. Follow the catalog steps instead.",
                 default => "This image hasn't been checked against the target pose.",

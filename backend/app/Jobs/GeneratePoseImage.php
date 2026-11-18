@@ -9,6 +9,7 @@ use App\Services\AIService;
 use App\Services\StorageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
@@ -17,8 +18,9 @@ class GeneratePoseImage implements ShouldQueue
 {
     use Queueable;
 
-    // Must stay below the queue's retry_after (90 s), or a slow job would be started a second time and billed twice.
-    public int $timeout = 80;
+    // Above the AI request timeout (figurepose.generation.request_timeout, 110 s) and below the queue's
+    // retry_after (REDIS_QUEUE_RETRY_AFTER, 150 s in compose), or a slow job would start twice and be billed twice.
+    public int $timeout = 120;
 
     // One retry only: every attempt may be billed by the image provider.
     public int $tries = 2;
@@ -40,17 +42,28 @@ class GeneratePoseImage implements ShouldQueue
         $analysis = $image->analysis;
         $target = $image->pose->joint_positions;
 
-        $result = $ai->generate(
-            $storage->read($analysis->image_disk, $analysis->image_path),
-            basename($analysis->image_path),
-            [
-                'profile' => $analysis->profile->slug,
-                'target' => ['keypoints' => $target['keypoints'], 'image_size' => $target['image_size']],
-                'instructions' => $image->pose->instructions ?? [],
-                'mirrored' => $image->mirrored,
-            ],
-            $analysis->public_id,
-        );
+        try {
+            $result = $ai->generate(
+                $storage->read($analysis->image_disk, $analysis->image_path),
+                basename($analysis->image_path),
+                [
+                    'profile' => $analysis->profile->slug,
+                    'target' => ['keypoints' => $target['keypoints'], 'image_size' => $target['image_size']],
+                    'instructions' => $image->pose->instructions ?? [],
+                    'mirrored' => $image->mirrored,
+                ],
+                $analysis->public_id,
+                $this->referencePhoto($image->pose->reference_image),
+            );
+        } catch (RequestException $e) {
+            // 422: the provider refused (moderation, bad input). Another paid try would get the same answer.
+            if ($e->response->status() === 422) {
+                $this->fail($e);
+
+                return;
+            }
+            throw $e;
+        }
 
         $bytes = base64_decode($result['image_base64'], true);
         if ($bytes === false || $bytes === '') {
@@ -67,6 +80,17 @@ class GeneratePoseImage implements ShouldQueue
             'validation_status' => ValidationStatus::tryFrom($result['validation']['status'] ?? '') ?? ValidationStatus::Unvalidated,
             'details' => ['validation' => $result['validation'] ?? null, 'prompt' => $result['prompt'] ?? null],
         ]);
+    }
+
+    /** The catalog photo of the target pose, from public/ (catalog/<slug>.jpg). Optional: the AI service also draws the pose. */
+    private function referencePhoto(?string $path): ?string
+    {
+        if ($path === null || str_contains($path, '..')) {
+            return null;
+        }
+        $file = public_path($path);
+
+        return is_file($file) ? file_get_contents($file) : null;
     }
 
     public function failed(?Throwable $e): void

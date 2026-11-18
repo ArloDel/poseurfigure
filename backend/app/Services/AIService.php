@@ -51,16 +51,20 @@ class AIService
      * (base64) and its validation against the target pose.
      *
      * @param  array<string, mixed>  $payload  profile, target {keypoints, image_size}, instructions, mirrored
+     * @param  string|null  $referenceBytes  the catalog photo of the target pose, shown to the image model
      * @return array{provider: string, image_base64: string, mime: string, validation: array<string, mixed>, prompt: string}
      */
-    public function generate(string $imageBytes, string $filename, array $payload, string $requestId): array
+    public function generate(string $imageBytes, string $filename, array $payload, string $requestId, ?string $referenceBytes = null): array
     {
-        return $this->client()
+        $request = $this->client()
+            ->timeout((int) config('figurepose.generation.request_timeout'))
             ->withHeaders(['X-Request-Id' => $requestId])
-            ->attach('image', $imageBytes, $filename)
-            ->post('/v1/generate', ['payload' => json_encode($payload)])
-            ->throw()
-            ->json();
+            ->attach('image', $imageBytes, $filename);
+        if ($referenceBytes !== null) {
+            $request = $request->attach('reference', $referenceBytes, 'reference.jpg');
+        }
+
+        return $request->post('/v1/generate', ['payload' => json_encode($payload)])->throw()->json();
     }
 
     /**

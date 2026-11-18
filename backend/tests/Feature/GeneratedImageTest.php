@@ -238,4 +238,50 @@ class GeneratedImageTest extends TestCase
         Storage::disk('s3')->assertMissing($image->image_path);
         $this->assertSame(0, GeneratedImage::count());
     }
+
+    public function test_the_catalog_photo_of_the_target_pose_is_sent_as_a_reference(): void
+    {
+        Queue::fake();
+        $this->fakeAi();
+        $this->runJob(GeneratedImage::findOrFail($this->generate()->json('data.id')));
+
+        $catalogPhoto = file_get_contents(public_path($this->pose->reference_image));
+        Http::assertSent(fn ($request) => str_contains($request->body(), 'name="reference"')
+            && str_contains($request->body(), substr($catalogPhoto, 0, 200)));
+    }
+
+    public function test_a_result_that_matches_mirrored_says_so(): void
+    {
+        Queue::fake();
+        Http::fake(['*/v1/generate' => Http::response([
+            'provider' => 'openai', 'prompt' => 'p', 'image_base64' => base64_encode('jpeg-bytes'), 'mime' => 'image/jpeg',
+            'width' => 1024, 'height' => 1536,
+            'validation' => ['status' => 'validated', 'similarity' => 0.87, 'mirrored' => true],
+        ])]);
+        $image = $this->runJob(GeneratedImage::findOrFail($this->generate()->json('data.id')));
+
+        $this->withHeader('X-Guest-Key', $this->guestKey)->getJson("/api/v1/generated-images/{$image->id}")
+            ->assertJsonPath('data.provider', 'openai')
+            ->assertJsonPath('data.shown_mirrored', true)
+            ->assertJsonPath('data.validation_note', 'The pose in this image matches the target pose, mirrored left to right. It is not proof your figure can hold it.');
+    }
+
+    public function test_a_refused_request_fails_at_once_instead_of_paying_for_a_retry(): void
+    {
+        Queue::fake();
+        Http::fake(['*/v1/generate' => Http::response(['detail' => 'OpenAI returned 400: moderation_blocked'], 422)]);
+        $image = GeneratedImage::findOrFail($this->generate()->json('data.id'));
+
+        $job = (new GeneratePoseImage($image->id))->withFakeQueueInteractions();
+        app()->call([$job, 'handle']);
+
+        $job->assertFailed();
+    }
+
+    public function test_the_analysis_names_the_image_service_for_the_consent_sheet(): void
+    {
+        config(['figurepose.generation.provider_name' => 'OpenAI']);
+        $this->withHeader('X-Guest-Key', $this->guestKey)->getJson("/api/v1/analyses/{$this->analysis->public_id}")
+            ->assertJsonPath('data.ai_visuals_provider', 'OpenAI');
+    }
 }
