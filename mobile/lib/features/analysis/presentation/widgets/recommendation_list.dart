@@ -87,12 +87,17 @@ extension on RecommendationList {
     final recs = analysis.recommendations;
     final character = analysis.characterName;
     final hasSame = recs.any((r) => r.group == 'same_character');
+    final hasSimilar = recs.any((r) => r.group == 'similar_look');
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Text('Pose ideas for your figure', style: text.titleLarge),
       if (character != null && !hasSame) ...[
         const SizedBox(height: 6),
-        Text('No $character poses in our collection yet. These figures look like yours.', style: text.bodyMedium),
+        Text(
+            hasSimilar
+                ? 'No $character poses in our collection yet. These figures look like yours.'
+                : 'No $character poses in our collection yet, and no figures that look much like it. Here are other poses to try.',
+            style: text.bodyMedium),
       ],
       for (final MapEntry(key: group, value: title) in ideaGroups.entries)
         if (recs.where((r) => (r.group ?? 'more') == group).toList() case final items when items.isNotEmpty) ...[

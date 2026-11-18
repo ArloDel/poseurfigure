@@ -46,6 +46,13 @@ void main() {
     expect(find.text('Figures that look like yours'), findsOneWidget);
   });
 
+  testWidgets('when nothing looks alike either, the app does not claim it does', (tester) async {
+    await open(tester, analysisResult('a1', recommendations: [recJson(1, 1, reasons: ['new_pose'], group: 'more')],
+        character: 'Spider-Man', characterSource: 'user'));
+    await scrollTo(tester, find.textContaining('no figures that look much like it'));
+    expect(find.textContaining('These figures look like yours'), findsNothing);
+  });
+
   testWidgets('recognizing the character asks first, then shows that character first', (tester) async {
     final app = await open(tester, analysisResult('a1', recommendations: ideaRecs(), recognition: true));
 
