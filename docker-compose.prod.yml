@@ -41,6 +41,9 @@ x-backend-env: &backend-env
   CATALOG_PATH: /shared/catalog/poses.json
   # Off until a real image provider is connected (README "AI visuals").
   GENERATION_ENABLED: ${GENERATION_ENABLED:-false}
+  GENERATION_PROVIDER_NAME: ${GENERATION_PROVIDER_NAME:-}
+  # Longer than the slowest job (AI visuals: 120 s), so a running job is never started a second time.
+  REDIS_QUEUE_RETRY_AFTER: "150"
 
 services:
   web:
@@ -86,7 +89,7 @@ services:
 
   worker:
     image: figurepose-backend:prod
-    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--timeout=90", "--max-time=3600"]
+    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--timeout=130", "--max-time=3600"]
     environment: *backend-env
     volumes:
       - ./shared:/shared:ro
@@ -102,6 +105,9 @@ services:
     environment:
       AI_WARMUP: "true"
       AI_GENERATION_PROVIDER: ${AI_GENERATION_PROVIDER:-none}
+      AI_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AI_OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1-mini}
+      AI_OPENAI_IMAGE_QUALITY: ${OPENAI_IMAGE_QUALITY:-medium}
     volumes:
       - ./shared:/shared:ro
       - model_cache:/models

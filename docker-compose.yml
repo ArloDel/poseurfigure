@@ -26,8 +26,11 @@ x-backend-env: &backend-env
   AI_SERVICE_TIMEOUT: "60"
   SKELETON_PROFILES_PATH: /shared/skeleton_profiles
   CATALOG_PATH: /shared/catalog/poses.json
-  # AI visuals: on for development with the stub provider (see ai service). Turn off without a real provider in production.
+  # AI visuals: on for development. The ai service uses the stub unless .env picks a real provider.
   GENERATION_ENABLED: "true"
+  GENERATION_PROVIDER_NAME: ${GENERATION_PROVIDER_NAME:-}
+  # Longer than the slowest job (AI visuals: 120 s), so a running job is never started a second time.
+  REDIS_QUEUE_RETRY_AFTER: "150"
 
 services:
   api:
@@ -53,7 +56,7 @@ services:
   worker:
     build: ./backend
     container_name: figurepose-worker
-    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--timeout=90"]
+    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--timeout=130"]
     environment: *backend-env
     volumes:
       - ./backend:/var/www
@@ -72,9 +75,12 @@ services:
     environment:
       # Load the models at startup, so the first analysis isn't slow. First start downloads ~1.3 GB.
       AI_WARMUP: "true"
-      # Development stand-in for an image service: returns the original photo, nothing leaves this machine.
-      # A real provider is added in ai-service/app/services/image_generator.py; its API key goes in .env.
-      AI_GENERATION_PROVIDER: stub
+      # "stub" (default): returns the original photo, nothing leaves this machine and nothing is billed.
+      # "openai": set AI_GENERATION_PROVIDER=openai and OPENAI_API_KEY in .env. Every visual is billed.
+      AI_GENERATION_PROVIDER: ${AI_GENERATION_PROVIDER:-stub}
+      AI_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AI_OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1-mini}
+      AI_OPENAI_IMAGE_QUALITY: ${OPENAI_IMAGE_QUALITY:-medium}
     volumes:
       - ./shared:/shared:ro
       - model_cache:/models
