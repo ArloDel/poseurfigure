@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import json
 import logging
 import time
 import uuid
@@ -15,6 +16,7 @@ from app.config import Settings, get_settings
 from app.schemas.analysis import (
     AnalyzeResponse, GenerateRequest, GenerateResponse, RecommendRequest, RecommendResponse, SkeletonProfile,
 )
+from app.services.figure_identifier import FigureIdentifier, IdentifyFailed, build_identifier
 from app.services.image_quality import UnreadableImage, assess, load_image
 from app.services.image_generator import GenerationFailed, ImageGenerator, build_generator, build_prompt, validate
 from app.services.pipeline import Pipeline
@@ -59,6 +61,11 @@ def get_generator() -> ImageGenerator | None:
     return build_generator(s.generation_provider, s)
 
 
+def get_identifier() -> FigureIdentifier | None:
+    s = get_settings()
+    return build_identifier(s.identify_provider, s)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     s = get_settings()
@@ -94,6 +101,7 @@ def health(settings: Settings = Depends(get_settings)) -> dict:
     profiles = load_profiles(settings.skeleton_profiles_path)
     return {"status": "ok", "service": settings.service_name, "version": settings.version,
             "models_enabled": settings.models_enabled, "generation_provider": settings.generation_provider,
+            "identify_provider": settings.identify_provider,
             "profiles": sorted(profiles)}
 
 
@@ -109,6 +117,42 @@ def recommend_poses(request: RecommendRequest, settings: Settings = Depends(get_
     if request.profile not in known:
         raise HTTPException(422, f"Unknown profile '{request.profile}'. Known: {', '.join(sorted(known))}.")
     return rank(request, known[request.profile])
+
+
+@app.post("/v1/identify")
+async def identify_figure(
+    image: UploadFile = File(...),
+    bbox: str | None = Form(None),
+    settings: Settings = Depends(get_settings),
+    identifier: FigureIdentifier | None = Depends(get_identifier),
+) -> dict:
+    """Names the character the figure shows. `bbox` is the selected figure's box from /v1/analyze ([x0, y0, x1, y1],
+    normalized); without it the whole photo is sent. A suggestion for the user to confirm."""
+    if identifier is None:
+        raise HTTPException(503, "Character recognition is not configured on this server.")
+    data = await image.read(settings.max_upload_mb * 1024 * 1024 + 1)
+    if len(data) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(413, f"Image is larger than {settings.max_upload_mb} MB.")
+    try:
+        img = load_image(data)
+    except UnreadableImage as exc:
+        raise HTTPException(422, str(exc)) from exc
+    if bbox:
+        try:
+            x0, y0, x1, y1 = (float(v) for v in json.loads(bbox))
+            assert 0 <= x0 < x1 <= 1 and 0 <= y0 < y1 <= 1
+        except (ValueError, TypeError, AssertionError) as exc:
+            raise HTTPException(422, "bbox must be [x0, y0, x1, y1] between 0 and 1.") from exc
+        w, h = img.size
+        # A little margin: the box can clip hands or a cape that help recognize the character.
+        mx, my = (x1 - x0) * 0.05, (y1 - y0) * 0.05
+        img = img.crop((max(0, x0 - mx) * w, max(0, y0 - my) * h, min(1, x1 + mx) * w, min(1, y1 + my) * h))
+    try:
+        result = await run_in_threadpool(identifier.identify, img)
+    except IdentifyFailed as exc:
+        log.warning("identify failed: %s", exc)
+        raise HTTPException(502 if exc.retryable else 422, str(exc)) from exc
+    return {"provider": identifier.name, **result}
 
 
 @app.post("/v1/generate")

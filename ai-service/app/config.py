@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     openai_image_quality: str = "medium"  # low, medium, high: cost and time grow with it
     openai_image_size: str = "1024x1536"  # portrait, like most figure photos
 
+    # Naming the character a figure shows (pose ideas: same character first). "none" = the user types it.
+    identify_provider: str = "none"
+    # gpt-5.4-mini mixed up a black-suit Spider-Man and Venom on a test photo; gpt-5.4 got it right twice.
+    openai_vision_model: str = "gpt-5.4"
+    identify_timeout: float = 45.0
+
 
 @lru_cache
 def get_settings() -> Settings:
