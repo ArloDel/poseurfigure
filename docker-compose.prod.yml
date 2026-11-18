@@ -39,8 +39,12 @@ x-backend-env: &backend-env
   AI_SERVICE_TIMEOUT: "60"
   SKELETON_PROFILES_PATH: /shared/skeleton_profiles
   CATALOG_PATH: /shared/catalog/poses.json
+  APPEARANCE_PATH: /shared/catalog/appearance.json
   # Off until a real image provider is connected (README "AI visuals").
   GENERATION_ENABLED: ${GENERATION_ENABLED:-false}
+  # Naming the figure's character (pose ideas: same character first). Needs AI_IDENTIFY_PROVIDER in the ai service.
+  CHARACTER_RECOGNITION_ENABLED: ${CHARACTER_RECOGNITION_ENABLED:-false}
+  CHARACTER_PROVIDER_NAME: ${CHARACTER_PROVIDER_NAME:-}
   GENERATION_PROVIDER_NAME: ${GENERATION_PROVIDER_NAME:-}
   # Longer than the slowest job (AI visuals: 120 s), so a running job is never started a second time.
   REDIS_QUEUE_RETRY_AFTER: "150"
@@ -108,6 +112,9 @@ services:
       AI_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       AI_OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1-mini}
       AI_OPENAI_IMAGE_QUALITY: ${OPENAI_IMAGE_QUALITY:-medium}
+      # "openai": names the character a figure shows (billed per photo the user agrees to send).
+      AI_IDENTIFY_PROVIDER: ${AI_IDENTIFY_PROVIDER:-none}
+      AI_OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gpt-5.4}
     volumes:
       - ./shared:/shared:ro
       - model_cache:/models
