@@ -8,8 +8,12 @@ use App\Http\Requests\StoreAnalysisRequest;
 use App\Http\Resources\AnalysisResource;
 use App\Models\Analysis;
 use App\Services\AnalysisService;
+use App\Services\AIService;
 use App\Services\RecommendationService;
+use App\Services\StorageService;
 use App\Support\Requester;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -87,6 +91,64 @@ class AnalysisController extends ApiController
     }
 
     /** "Show different poses" (REC-07): replaces the list with poses not shown yet. */
+    /**
+     * Suggests the character the figure shows, with the vision model (the photo leaves the server: consent
+     * required), then ranks pose ideas again with that character first. Low-confidence answers are kept as a
+     * hint but not used; the user can always type or correct the name (setCharacter).
+     */
+    public function recognizeCharacter(Request $request, Analysis $analysis, AIService $ai, StorageService $storage, RecommendationService $recommendations): JsonResponse
+    {
+        $requester = Requester::fromRequest($request);
+        abort_unless($analysis->isOwnedBy($requester->user, $requester->guestKey), 404);
+        abort_unless((bool) config('figurepose.character.enabled'), 503, 'Character recognition is not available on this server.');
+        $request->validate(['consent' => ['accepted']], [
+            'consent.accepted' => 'Agree to send your photo to the recognition service first.',
+        ]);
+        abort_unless($analysis->status === AnalysisStatus::Completed, 409, 'The analysis is not finished yet.');
+
+        $figures = $analysis->pose_data['figures'] ?? [];
+        $bbox = $figures[$analysis->pose_data['selected_figure'] ?? 0]['bbox'] ?? null;
+        try {
+            $found = $ai->identify($storage->read($analysis->image_disk, $analysis->image_path),
+                basename($analysis->image_path), $bbox, $analysis->public_id);
+        } catch (RequestException $e) {
+            abort_if($e->response->status() === 422, 422, 'The recognition service declined this photo. Type the name instead.');
+            abort(503, "We couldn't recognize the character right now. Try again, or type the name.");
+        } catch (ConnectionException) {
+            abort(503, "We couldn't recognize the character right now. Try again, or type the name.");
+        }
+
+        $sure = ($found['confidence'] ?? 'low') !== 'low' && ($found['display_name'] ?? '') !== '';
+        $analysis->update([
+            'character_details' => array_intersect_key($found, array_flip(['character', 'variant', 'franchise', 'figure_line', 'display_name', 'confidence', 'model', 'provider'])),
+            'character_name' => $sure ? $found['display_name'] : $analysis->character_name,
+            'character_source' => $sure ? 'ai' : $analysis->character_source,
+        ]);
+        if ($sure) {
+            $recommendations->rerank($analysis);
+        }
+        $analysis->refresh()->load(['profile', 'recommendations.pose.profile']);
+
+        return $this->ok(new AnalysisResource($analysis),
+            $sure ? "Looks like {$found['display_name']}. Not right? Change it." : "We couldn't tell who this is. Type the name to see that character's poses.");
+    }
+
+    /** The user names (or corrects, or clears) the character; pose ideas are ranked again with it first. */
+    public function setCharacter(Request $request, Analysis $analysis, RecommendationService $recommendations): JsonResponse
+    {
+        $requester = Requester::fromRequest($request);
+        abort_unless($analysis->isOwnedBy($requester->user, $requester->guestKey), 404);
+        $data = $request->validate(['name' => ['present', 'nullable', 'string', 'max:120']]);
+        abort_unless($analysis->status === AnalysisStatus::Completed, 409, 'The analysis is not finished yet.');
+
+        $name = trim((string) ($data['name'] ?? ''));
+        $analysis->update(['character_name' => $name === '' ? null : $name, 'character_source' => $name === '' ? null : 'user']);
+        $recommendations->rerank($analysis);
+        $analysis->refresh()->load(['profile', 'recommendations.pose.profile']);
+
+        return $this->ok(new AnalysisResource($analysis), $name === '' ? 'Character cleared' : 'Showing poses of '.$name.' first');
+    }
+
     public function showDifferent(Request $request, Analysis $analysis, RecommendationService $recommendations): JsonResponse
     {
         $requester = Requester::fromRequest($request);

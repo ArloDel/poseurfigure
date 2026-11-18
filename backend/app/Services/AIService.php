@@ -47,6 +47,48 @@ class AIService
     }
 
     /**
+     * Pose ideas (/v1/inspire): the same character first, then figures that look alike, in poses unlike the
+     * figure's own.
+     *
+     * @param  array<string, mixed>|null  $pose  keypoints + image_size, or null when no pose was read
+     * @param  list<float>|null  $appearance  the figure's SigLIP 2 embedding
+     */
+    public function inspire(string $profile, ?array $pose, ?array $appearance, ?string $character, array $candidates, array $figureLimits, int $topK, string $requestId, array $excludeIds = []): array
+    {
+        return $this->client()
+            ->withHeaders(['X-Request-Id' => $requestId])
+            ->post('/v1/inspire', [
+                'profile' => $profile,
+                'pose' => $pose,
+                'appearance' => $appearance,
+                'character' => $character,
+                'candidates' => $candidates,
+                'figure_limits' => (object) $figureLimits,
+                'top_k' => $topK,
+                'exclude_ids' => array_values($excludeIds),
+            ])
+            ->throw()
+            ->json();
+    }
+
+    /**
+     * Suggests the character a figure shows (/v1/identify). $bbox is the selected figure's box, normalized.
+     *
+     * @param  list<float>|null  $bbox
+     * @return array{character: string, variant: string, franchise: string, display_name: string, confidence: string}
+     */
+    public function identify(string $imageBytes, string $filename, ?array $bbox, string $requestId): array
+    {
+        return $this->client()
+            ->timeout(60)
+            ->withHeaders(['X-Request-Id' => $requestId])
+            ->attach('image', $imageBytes, $filename)
+            ->post('/v1/identify', $bbox ? ['bbox' => json_encode(array_values($bbox))] : [])
+            ->throw()
+            ->json();
+    }
+
+    /**
      * Asks for an AI visual of the photo's figure in a target pose (PRD 8.6). The response carries the image
      * (base64) and its validation against the target pose.
      *

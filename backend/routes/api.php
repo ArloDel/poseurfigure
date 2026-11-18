@@ -51,6 +51,9 @@ Route::prefix('v1')->group(function () {
     Route::delete('/analyses/{analysis}', [AnalysisController::class, 'destroy'])->whereUuid('analysis');
     Route::post('/analyses/{analysis}/recommendations', [AnalysisController::class, 'showDifferent'])
         ->whereUuid('analysis')->middleware('throttle:analyses');
+    Route::post('/analyses/{analysis}/character/recognize', [AnalysisController::class, 'recognizeCharacter'])
+        ->whereUuid('analysis')->middleware('throttle:character');
+    Route::put('/analyses/{analysis}/character', [AnalysisController::class, 'setCharacter'])->whereUuid('analysis');
     Route::post('/analyses/{analysis}/profile', [AnalysisController::class, 'confirmProfile'])
         ->whereUuid('analysis')->middleware('throttle:analyses');
 });

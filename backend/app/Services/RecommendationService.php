@@ -18,9 +18,10 @@ class RecommendationService
      * @param  list<int>  $excludeIds
      * @return array{rows: list<array<string, mixed>>, basis: string, remaining: int, matcher_version: ?string}
      */
-    public function rank(Analysis $analysis, array $pose, string $profileSlug, array $excludeIds = []): array
+    public function rank(Analysis $analysis, array $pose, string $profileSlug, array $excludeIds = [], ?array $appearance = null): array
     {
         $empty = ['rows' => [], 'basis' => 'pose', 'remaining' => 0, 'matcher_version' => null];
+        $appearance ??= $analysis->pose_data['appearance'] ?? null;
 
         $candidates = PoseCatalog::published()
             ->whereHas('profile', fn ($q) => $q->where('slug', $profileSlug))
@@ -32,13 +33,38 @@ class RecommendationService
                 'image_size' => $p->joint_positions['image_size'],
                 'category' => $p->category,
                 'difficulty' => $p->difficulty,
+                'appearance' => $p->appearance['embedding'] ?? null,
+                'character' => $p->character_name,
             ])
             ->values()
             ->all();
 
-        if ($candidates === [] || empty($pose['keypoints'])) {
+        if ($candidates === [] || (empty($pose['keypoints']) && empty($appearance['embedding']))) {
             return $empty;
         }
+
+        // Pose ideas: the same character first, then figures that look like this one (the product's core idea).
+        // Older analyses without an appearance embedding keep the pose-matching ranking.
+        if (! empty($appearance['embedding'])) {
+            $result = $this->ai->inspire(
+                $profileSlug,
+                empty($pose['keypoints']) ? null : ['keypoints' => $pose['keypoints'], 'image_size' => [$analysis->image_width, $analysis->image_height]],
+                $appearance['embedding'],
+                $analysis->character_name,
+                $candidates,
+                $analysis->figure?->articulation_config ?? [],
+                (int) config('figurepose.recommendations.ideas_count'),
+                $analysis->public_id,
+                $excludeIds,
+            );
+
+            return $this->rows($result);
+        }
+
+        foreach ($candidates as &$c) {
+            unset($c['appearance'], $c['character']);
+        }
+        unset($c);
 
         $result = $this->ai->recommend(
             $profileSlug,
@@ -51,6 +77,12 @@ class RecommendationService
             $excludeIds,
         );
 
+        return $this->rows($result);
+    }
+
+    /** @return array{rows: list<array<string, mixed>>, basis: string, remaining: int, matcher_version: ?string} */
+    private function rows(array $result): array
+    {
         $rows = collect($result['results'] ?? [])->values()->map(fn (array $r, int $i) => [
             'pose_catalog_id' => $r['id'],
             'rank' => $i + 1,
@@ -64,6 +96,8 @@ class RecommendationService
                 'warnings' => $r['warnings'] ?? [],
                 'reasons' => $r['reasons'] ?? [],
                 'changes' => $r['changes'] ?? [],
+                'group' => $r['group'] ?? null,
+                'look' => $r['look'] ?? null,
                 'matcher_version' => $result['matcher_version'] ?? null,
             ],
         ])->all();
@@ -97,6 +131,19 @@ class RecommendationService
             'shown_pose_ids' => array_values(array_unique([...$alreadyShown, ...array_column($ranking['rows'], 'pose_catalog_id')])),
         ];
         $analysis->update(['pose_data' => $data]);
+    }
+
+    /**
+     * Ranks again from the top, e.g. after the user named the character, and forgets which poses were shown.
+     */
+    public function rerank(Analysis $analysis): void
+    {
+        $pose = $analysis->pose_data['pose'] ?? null;
+        $profile = $analysis->profile?->slug;
+        if ($analysis->status !== AnalysisStatus::Completed || $pose === null || $profile === null) {
+            return;
+        }
+        $this->replace($analysis, $this->rank($analysis, $pose, $profile));
     }
 
     /**

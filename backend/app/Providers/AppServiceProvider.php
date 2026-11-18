@@ -27,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // AI visuals cost money per image: tighter than uploads. A daily cap is enforced in GenerationService.
+        // Each recognition is a paid call to the vision model.
+        RateLimiter::for('character', function (Request $request) {
+            $key = $request->user('sanctum')?->id ?? $request->header('X-Guest-Key') ?? $request->ip();
+
+            return Limit::perMinute(5)->by('character:'.$key);
+        });
+
         RateLimiter::for('generation', function (Request $request) {
             $key = $request->user('sanctum')?->id ?? $request->header('X-Guest-Key') ?? $request->ip();
 

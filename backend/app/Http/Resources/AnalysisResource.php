@@ -46,6 +46,9 @@ class AnalysisResource extends JsonResource
                     // What to change on the user's figure, joint by joint, in their own left/right: keep, bend,
                     // straighten, raise, lower, lift_leg, lower_leg, unknown. Empty when ranked by figure type only.
                     'changes' => $r->details['changes'] ?? [],
+                    // Pose ideas: same_character, similar_look or more; look = how alike the figures look (0-1).
+                    'group' => $r->details['group'] ?? null,
+                    'look' => $r->details['look'] ?? null,
                     'pose' => (new PoseResource($r->pose))->resolve($request),
                 ])->all(),
             ),
@@ -55,6 +58,17 @@ class AnalysisResource extends JsonResource
                 fn () => $this->pose_data['recommendation']['basis'] ?? 'pose'),
             'more_recommendations' => $this->when($this->status === AnalysisStatus::Completed,
                 fn () => ($this->pose_data['recommendation']['remaining'] ?? 0) > 0),
+            // The character the figure shows, if known: suggested by the vision model ("ai") or typed ("user").
+            'character' => $this->when($this->status === AnalysisStatus::Completed, fn () => [
+                'name' => $this->character_name,
+                'source' => $this->character_source,
+                'franchise' => $this->character_source === 'ai' ? ($this->character_details['franchise'] ?? null) : null,
+                'confidence' => $this->character_source === 'ai' ? ($this->character_details['confidence'] ?? null) : null,
+            ]),
+            'character_recognition' => $this->when($this->status === AnalysisStatus::Completed, fn () => [
+                'available' => (bool) config('figurepose.character.enabled'),
+                'provider' => config('figurepose.character.provider_name'),
+            ]),
             // Whether the app may offer "Make AI visual" for this analysis' recommendations.
             'ai_visuals_available' => $this->when($this->status === AnalysisStatus::Completed,
                 (bool) config('figurepose.generation.enabled')),
