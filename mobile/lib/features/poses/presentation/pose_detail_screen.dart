@@ -45,6 +45,7 @@ class PoseDetailScreen extends ConsumerWidget {
               mirrored: mirrored,
               changes: rec?.changes ?? const [],
               visualsFor: analysis != null && analysis.aiVisualsAvailable ? analysis.id : null,
+              visualsProvider: analysis?.aiVisualsProvider,
             ),
           AsyncError(:final error) => SafeArea(
               child: ListView(padding: const EdgeInsets.all(18), children: [
@@ -61,7 +62,7 @@ class PoseDetailScreen extends ConsumerWidget {
 }
 
 class _Detail extends StatelessWidget {
-  const _Detail({required this.pose, this.mirrored = false, this.changes = const [], this.visualsFor});
+  const _Detail({required this.pose, this.mirrored = false, this.changes = const [], this.visualsFor, this.visualsProvider});
 
   final Pose pose;
   final bool mirrored;
@@ -71,6 +72,7 @@ class _Detail extends StatelessWidget {
 
   /// Analysis to make AI visuals from, when the server offers them.
   final String? visualsFor;
+  final String? visualsProvider;
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +177,7 @@ class _Detail extends StatelessWidget {
                   ),
                   if (visualsFor != null) ...[
                     const SizedBox(height: 22),
-                    AiVisualSection(poseId: pose.id, analysisId: visualsFor!, mirrored: mirrored),
+                    AiVisualSection(poseId: pose.id, analysisId: visualsFor!, mirrored: mirrored, provider: visualsProvider),
                   ],
                   if (pose.credit != null) ...[
                     const SizedBox(height: 14),

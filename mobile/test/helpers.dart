@@ -182,7 +182,8 @@ Map<String, dynamic> recJson(int rank, int poseId,
 }
 
 Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confidence = 0.9, bool needsConfirmation = false,
-    bool byUser = false, List<Map<String, dynamic>> recommendations = const [], bool typeOnly = false, bool more = true, bool visuals = false}) {
+    bool byUser = false, List<Map<String, dynamic>> recommendations = const [], bool typeOnly = false, bool more = true, bool visuals = false,
+    String? provider}) {
   Map<String, dynamic> kp(double x, double y, [String vis = 'visible']) => {'x': x, 'y': y, 'confidence': 0.9, 'visibility': vis};
   return Analysis.fromJson({
     'analysis_id': id,
@@ -195,6 +196,7 @@ Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confi
     'recommendation_basis': typeOnly ? 'type_only' : 'pose',
     'more_recommendations': more,
     'ai_visuals_available': visuals,
+    'ai_visuals_provider': provider,
     'classification': {'profile': profile, 'confidence': byUser ? 1.0 : confidence, 'needs_confirmation': needsConfirmation,
       'source': byUser ? 'user' : 'model'},
     'pose': {

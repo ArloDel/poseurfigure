@@ -46,6 +46,17 @@ void main() {
     expect(find.text('Make AI visual'), findsNothing);
   });
 
+  testWidgets('the consent sheet names the image service when the server does', (tester) async {
+    final app = TestApp(history: [analysisResult('a3', visuals: true, provider: 'OpenAI', recommendations: [recJson(1, 1)])]);
+    await app.pump(tester);
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).push('/poses/1?analysis=a3');
+    await tester.pumpAndSettle();
+    await scrollTo(tester, find.text('Make AI visual'));
+    await tester.tap(find.text('Make AI visual'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your photo goes to OpenAI, an image service outside FigurePose.'), findsOneWidget);
+  });
+
   testWidgets('no AI visual section when the server does not offer them', (tester) async {
     final app = TestApp(history: [analysisResult('a2', recommendations: [recJson(1, 1)])]);
     await app.pump(tester);

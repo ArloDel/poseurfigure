@@ -11,11 +11,14 @@ import '../domain/ai_visual.dart';
 
 /// "Make AI visual" on a recommended pose: consent first, then the image with its AI and validation labels.
 class AiVisualSection extends ConsumerStatefulWidget {
-  const AiVisualSection({super.key, required this.poseId, required this.analysisId, this.mirrored = false});
+  const AiVisualSection({super.key, required this.poseId, required this.analysisId, this.mirrored = false, this.provider});
 
   final int poseId;
   final String analysisId;
   final bool mirrored;
+
+  /// The image service's name for the consent sheet, when the server gives one.
+  final String? provider;
 
   @override
   ConsumerState<AiVisualSection> createState() => _AiVisualSectionState();
@@ -38,7 +41,7 @@ class _AiVisualSectionState extends ConsumerState<AiVisualSection> {
     final agreed = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _ConsentSheet(),
+      builder: (_) => _ConsentSheet(provider: widget.provider),
     );
     if (agreed != true || !mounted) return;
 
@@ -190,7 +193,9 @@ class _Badge extends StatelessWidget {
 
 /// PRD 15.1: say what is sent and where before anything leaves the device.
 class _ConsentSheet extends StatelessWidget {
-  const _ConsentSheet();
+  const _ConsentSheet({this.provider});
+
+  final String? provider;
 
   @override
   Widget build(BuildContext context) {
@@ -204,8 +209,10 @@ class _ConsentSheet extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Send your photo for an AI visual?', style: TextStyle(fontFamily: 'BowlbyOne', fontSize: 21)),
             const SizedBox(height: 10),
-            for (final line in const [
-              'Your photo goes to an image service outside FigurePose.',
+            for (final line in [
+              provider == null
+                  ? 'Your photo goes to an image service outside FigurePose.'
+                  : 'Your photo goes to $provider, an image service outside FigurePose.',
               "The result is labelled AI-generated. It isn't proof your figure can hold the pose.",
               'Deleting the analysis in History deletes the visual too.',
             ])

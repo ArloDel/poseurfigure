@@ -45,6 +45,7 @@ class Analysis {
     this.typeOnly = false,
     this.moreRecommendations = false,
     this.aiVisualsAvailable = false,
+    this.aiVisualsProvider,
   });
 
   final String id;
@@ -69,6 +70,9 @@ class Analysis {
   final bool typeOnly;
   final bool moreRecommendations;
   final bool aiVisualsAvailable;
+
+  /// Who makes AI visuals ("OpenAI"), named before the user agrees to send their photo. Null: not named.
+  final String? aiVisualsProvider;
 
   factory Analysis.fromJson(Map<String, dynamic> json) {
     final error = json['error'] as Map<String, dynamic>?;
@@ -96,6 +100,7 @@ class Analysis {
       typeOnly: json['recommendation_basis'] == 'type_only',
       moreRecommendations: json['more_recommendations'] as bool? ?? false,
       aiVisualsAvailable: json['ai_visuals_available'] as bool? ?? false,
+      aiVisualsProvider: json['ai_visuals_provider'] as String?,
       issues: [
         for (final i in (quality?['issues'] as List? ?? const []))
           QualityIssue((i as Map)['code'] as String, i['message'] as String),
