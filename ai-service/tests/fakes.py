@@ -33,6 +33,12 @@ class FakeClassifier:
         self.calls += 1
         return dict(self.scores)
 
+    def embed(self, crop):
+        # A tiny stand-in vector, derived from the crop's average color so different crops differ.
+        r, g, b = crop.convert("RGB").resize((1, 1)).getpixel((0, 0))
+        n = (r * r + g * g + b * b) ** 0.5 or 1.0
+        return [r / n, g / n, b / n]
+
 
 class FakeEstimator:
     version = "fake-pose"

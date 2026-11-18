@@ -10,7 +10,7 @@ from app.models.figure_classifier import FigureClassifier
 from app.models.object_detector import FigureDetector
 from app.models.pose_estimator import PoseEstimator
 from app.schemas.analysis import (
-    AnalyzeResponse, Classification, FigureDetection, QualityIssue, QualityReport, SkeletonProfile,
+    AnalyzeResponse, Appearance, Classification, FigureDetection, QualityIssue, QualityReport, SkeletonProfile,
 )
 from app.services.pose_extractor import Thresholds, build_pose
 
@@ -72,17 +72,18 @@ class Pipeline:
         x0, y0, x1, y1 = figures[index].bbox
         w, h = image.size
 
+        crop = image.crop((x0 * w, y0 * h, x1 * w, y1 * h))
         if profile is not None:
             classification = Classification(profile=profile, confidence=1.0, scores={}, needs_confirmation=False, source="user")
         else:
-            crop = image.crop((x0 * w, y0 * h, x1 * w, y1 * h))
             scores = timed("classify", self.classifier.classify, crop)
             best = max(scores, key=scores.get)
             classification = Classification(profile=best, confidence=scores[best], scores=scores,
                                             needs_confirmation=scores[best] < self.min_profile_confidence)
 
+        appearance = Appearance(embedding=timed("embed", self.classifier.embed, crop), version=self.classifier.version)
         raw = timed("pose", self.estimator.estimate, image, (x0, y0, x1, y1))
         pose = build_pose(raw, self.profiles[classification.profile], image.size, self.thresholds)
 
-        return AnalyzeResponse(stage="keypoints", quality=quality, selected_figure=index,
-                               classification=classification, pose=pose, **{**base, "profile": classification.profile})
+        return AnalyzeResponse(stage="keypoints", quality=quality, selected_figure=index, classification=classification,
+                               pose=pose, appearance=appearance, **{**base, "profile": classification.profile})

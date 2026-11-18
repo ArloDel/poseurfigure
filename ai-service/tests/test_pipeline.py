@@ -24,7 +24,7 @@ def test_full_run_returns_profile_keypoints_and_versions():
     assert result.profile == "humanoid_v1"
     assert result.classification.needs_confirmation is False
     assert result.pose.visible_count == 16
-    assert set(result.timings_ms) == {"detect", "classify", "pose"}
+    assert set(result.timings_ms) == {"detect", "classify", "embed", "pose"}
     assert "fake-det" in result.model_version and result.models["pose"] == "fake-pose"
 
 
@@ -50,6 +50,7 @@ def test_user_chosen_profile_skips_the_classifier():
 
     assert cls.calls == 0
     assert result.classification.source == "user"
+    assert result.appearance is not None  # the look is still needed to find similar figures
     assert result.pose.profile == "mecha_v1"
     assert result.pose.keypoints["backpack"].visibility == "not_estimated"
 
@@ -101,3 +102,12 @@ def test_iou_and_nms():
     assert iou(a, b) == 0.5 and iou(a, c) == 0
     kept = nms([Detection(a, 0.9, "q"), Detection((0, 0, 0.95, 1), 0.8, "q"), Detection(c, 0.7, "q")], 0.5)
     assert [d.score for d in kept] == [0.9, 0.7]
+
+
+def test_appearance_embedding_describes_the_selected_figure():
+    img = Image.new("RGB", (800, 1000), "white")
+    img.paste((200, 30, 30), (240, 50, 560, 980))  # the figure's box from FakeDetector is red
+    result = pipeline().run(img, QUALITY)
+    emb = result.appearance.embedding
+    assert result.appearance.version == "fake-cls"
+    assert abs(sum(v * v for v in emb) - 1) < 1e-6 and emb[0] > 0.9  # unit vector, mostly red: the crop, not the photo

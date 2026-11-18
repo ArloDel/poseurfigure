@@ -56,6 +56,13 @@ class PoseResult(BaseModel):
     hidden: list[str]
 
 
+class Appearance(BaseModel):
+    """How the selected figure looks, as an image embedding (SigLIP 2). Compared with the catalog's to find
+    figures that look alike: same character first, then similar ones."""
+    embedding: list[float]
+    version: str
+
+
 class AnalyzeResponse(BaseModel):
     model_version: str
     # Pipeline stage reached: quality_only (photo rejected or models off), detected (no keypoints), keypoints.
@@ -66,6 +73,7 @@ class AnalyzeResponse(BaseModel):
     selected_figure: int | None = None
     classification: Classification | None = None
     pose: PoseResult | None = None
+    appearance: Appearance | None = None
     models: dict[str, str] = {}
     timings_ms: dict[str, int] = {}
 

@@ -16,6 +16,10 @@ class FigureClassifier(Protocol):
         """Probability per profile slug, summing to 1."""
         ...
 
+    def embed(self, crop: Image.Image) -> list[float]:
+        """The figure's look as a unit vector: figures that look alike (same character, same suit) are close."""
+        ...
+
 
 # Several phrasings per profile; their logits are averaged (prompt ensembling).
 PROMPTS: dict[str, list[str]] = {
@@ -50,6 +54,8 @@ class Siglip2Classifier:
         self._cache_dir = cache_dir
         self._lock = threading.Lock()
         self._model = self._processor = self._text = None
+        # The last crop's image features: classify() and embed() run on the same crop, encode it once.
+        self._last: tuple[int, object] | None = None
 
     def _load(self):
         with self._lock:
@@ -65,14 +71,27 @@ class Siglip2Classifier:
                 with torch.inference_mode():
                     self._text = _features(self._model.get_text_features(**tokens))
 
-    def classify(self, crop: Image.Image) -> dict[str, float]:
+    def _image(self, crop: Image.Image):
         import torch
 
         self._load()
-        labels = list(PROMPTS)
+        if self._last is not None and self._last[0] == id(crop):
+            return self._last[1]
         pixels = self._processor(images=crop, return_tensors="pt")
         with torch.inference_mode():
             image = _features(self._model.get_image_features(**pixels))
+        self._last = (id(crop), image)
+        return image
+
+    def embed(self, crop: Image.Image) -> list[float]:
+        return [round(v, 5) for v in self._image(crop)[0].tolist()]
+
+    def classify(self, crop: Image.Image) -> dict[str, float]:
+        import torch
+
+        labels = list(PROMPTS)
+        image = self._image(crop)
+        with torch.inference_mode():
             # Same formula as SigLIP's forward pass: scaled cosine similarity plus bias.
             logits = (image @ self._text.T)[0] * self._model.logit_scale.exp() + self._model.logit_bias
         per_label, i = [], 0
