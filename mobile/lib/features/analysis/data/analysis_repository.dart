@@ -63,6 +63,27 @@ class AnalysisRepository {
     }
   }
 
+  /// Asks the server to suggest the character from the photo (the user agreed to send it).
+  /// Returns the analysis, ranked again with that character first, and the server's message.
+  Future<(Analysis, String)> recognizeCharacter(String id) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>('/analyses/$id/character/recognize', data: {'consent': true});
+      return (Analysis.fromJson(res.data!['data'] as Map<String, dynamic>), res.data!['message'] as String? ?? '');
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+  }
+
+  /// Names, corrects or (with null) clears the character. Pose ideas are ranked again.
+  Future<(Analysis, String)> setCharacter(String id, String? name) async {
+    try {
+      final res = await _dio.put<Map<String, dynamic>>('/analyses/$id/character', data: {'name': name});
+      return (Analysis.fromJson(res.data!['data'] as Map<String, dynamic>), res.data!['message'] as String? ?? '');
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+  }
+
   /// Analyses of the signed-in user, or of this device for a guest, newest first.
   Future<List<Analysis>> history() async {
     try {

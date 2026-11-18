@@ -74,6 +74,8 @@ class PoseRecommendation {
     this.reasons = const [],
     this.warnings = const [],
     this.changes = const [],
+    this.group,
+    this.look,
   });
 
   final int rank;
@@ -91,6 +93,12 @@ class PoseRecommendation {
   /// How to get from the figure's current pose to this one. Empty when ranked by figure type only.
   final List<JointChange> changes;
 
+  /// Pose ideas: same_character, similar_look or more. Null for older, pose-matched results.
+  final String? group;
+
+  /// How alike the two figures look, 0-1.
+  final double? look;
+
   factory PoseRecommendation.fromJson(Map<String, dynamic> json) => PoseRecommendation(
         rank: json['rank'] as int? ?? 0,
         pose: Pose.fromJson(json['pose'] as Map<String, dynamic>),
@@ -105,6 +113,8 @@ class PoseRecommendation {
         changes: [
           for (final c in (json['changes'] as List? ?? const [])) JointChange.fromJson(Map<String, dynamic>.from(c as Map)),
         ],
+        group: json['group'] as String?,
+        look: (json['look'] as num?)?.toDouble(),
       );
 }
 
@@ -116,4 +126,14 @@ const reasonLabels = {
   'mirror': 'Mirror it',
   'different_category': 'Something different',
   'check_joints': 'Check joints',
+  'same_character': 'Same character',
+  'similar_look': 'Looks like yours',
+  'new_pose': 'New pose',
+};
+
+/// Section titles for pose ideas, in the order they are shown.
+const ideaGroups = {
+  'same_character': 'Same character',
+  'similar_look': 'Figures that look like yours',
+  'more': 'More ideas',
 };

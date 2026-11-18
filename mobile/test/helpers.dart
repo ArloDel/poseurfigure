@@ -153,6 +153,29 @@ class FakeAnalysisRepository implements AnalysisRepository {
     return (items[i], 'Here are different poses');
   }
 
+  final characterCalls = <(String, String?)>[];
+
+  /// What recognizeCharacter() answers: a name (or null for "couldn't tell").
+  String? recognized = 'Spider-Man (symbiote suit)';
+
+  @override
+  Future<(Analysis, String)> recognizeCharacter(String id) async {
+    characterCalls.add((id, 'recognize'));
+    final i = items.indexWhere((a) => a.id == id);
+    items[i] = analysisResult(id, recommendations: ideaRecs(same: recognized != null), character: recognized,
+        characterSource: recognized == null ? null : 'ai', recognition: true);
+    return (items[i], recognized == null ? "We couldn't tell who this is." : 'Looks like $recognized.');
+  }
+
+  @override
+  Future<(Analysis, String)> setCharacter(String id, String? name) async {
+    characterCalls.add((id, name));
+    final i = items.indexWhere((a) => a.id == id);
+    items[i] = analysisResult(id, recommendations: ideaRecs(same: name != null), character: name,
+        characterSource: name == null ? null : 'user', recognition: true);
+    return (items[i], name == null ? 'Character cleared' : 'Showing poses of $name first');
+  }
+
   @override
   Future<Map<String, int>> profileIds() async => {'humanoid_v1': 1, 'anime_v1': 2, 'mecha_v1': 3};
 
@@ -165,10 +188,16 @@ class FakeAnalysisRepository implements AnalysisRepository {
   }
 }
 
+/// Pose ideas as the API returns them: pose 1 as the same character (when [same]), pose 2 as a look-alike.
+List<Map<String, dynamic>> ideaRecs({bool same = false}) => [
+      recJson(1, 1, reasons: same ? ['same_character', 'new_pose'] : ['similar_look'], group: same ? 'same_character' : 'similar_look'),
+      recJson(2, 2, reasons: ['new_pose'], group: 'more'),
+    ];
+
 /// A completed analysis as the API returns it.
 /// A recommendation as the API returns it, for the sample poses (1 = Rider ready stance, 2 = Rifle aim).
 Map<String, dynamic> recJson(int rank, int poseId,
-    {bool mirrored = false, List<String> reasons = const [], bool warn = false, List<Map<String, dynamic>> changes = const []}) {
+    {bool mirrored = false, List<String> reasons = const [], bool warn = false, List<Map<String, dynamic>> changes = const [], String? group}) {
   final p = poseId == 1
       ? {'id': 1, 'slug': 'rider-ready-stance', 'name': 'Rider ready stance', 'category': 'action', 'difficulty': 'medium', 'profile': 'humanoid_v1'}
       : {'id': 2, 'slug': 'rifle-aim', 'name': 'Rifle aim', 'category': 'cinematic', 'difficulty': 'medium', 'profile': 'humanoid_v1'};
@@ -176,6 +205,7 @@ Map<String, dynamic> recJson(int rank, int poseId,
     'rank': rank, 'score': 0.9, 'similarity_score': 0.86, 'feasibility_score': warn ? 0.7 : 1.0, 'mirrored': mirrored,
     'reasons': reasons,
     'changes': changes,
+    'group': group,
     'warnings': warn ? [{'joint': 'left_elbow', 'target': 20, 'limit': 35}] : [],
     'pose': p,
   };
@@ -183,7 +213,7 @@ Map<String, dynamic> recJson(int rank, int poseId,
 
 Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confidence = 0.9, bool needsConfirmation = false,
     bool byUser = false, List<Map<String, dynamic>> recommendations = const [], bool typeOnly = false, bool more = true, bool visuals = false,
-    String? provider}) {
+    String? provider, String? character, String? characterSource, bool recognition = false}) {
   Map<String, dynamic> kp(double x, double y, [String vis = 'visible']) => {'x': x, 'y': y, 'confidence': 0.9, 'visibility': vis};
   return Analysis.fromJson({
     'analysis_id': id,
@@ -197,6 +227,8 @@ Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confi
     'more_recommendations': more,
     'ai_visuals_available': visuals,
     'ai_visuals_provider': provider,
+    'character': {'name': character, 'source': characterSource, 'franchise': character == null ? null : 'Marvel'},
+    'character_recognition': {'available': recognition, 'provider': recognition ? 'OpenAI' : null},
     'classification': {'profile': profile, 'confidence': byUser ? 1.0 : confidence, 'needs_confirmation': needsConfirmation,
       'source': byUser ? 'user' : 'model'},
     'pose': {

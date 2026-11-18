@@ -46,6 +46,11 @@ class Analysis {
     this.moreRecommendations = false,
     this.aiVisualsAvailable = false,
     this.aiVisualsProvider,
+    this.characterName,
+    this.characterSource,
+    this.characterFranchise,
+    this.recognitionAvailable = false,
+    this.recognitionProvider,
   });
 
   final String id;
@@ -74,6 +79,17 @@ class Analysis {
   /// Who makes AI visuals ("OpenAI"), named before the user agrees to send their photo. Null: not named.
   final String? aiVisualsProvider;
 
+  /// The character the figure shows ("Spider-Man (symbiote suit)"): pose ideas show that character first.
+  final String? characterName;
+
+  /// "ai" (suggested by the recognition service) or "user" (typed or corrected).
+  final String? characterSource;
+  final String? characterFranchise;
+
+  /// Whether the server can suggest the character from the photo, and which service it uses.
+  final bool recognitionAvailable;
+  final String? recognitionProvider;
+
   factory Analysis.fromJson(Map<String, dynamic> json) {
     final error = json['error'] as Map<String, dynamic>?;
     final quality = json['quality'] as Map<String, dynamic>?;
@@ -101,6 +117,11 @@ class Analysis {
       moreRecommendations: json['more_recommendations'] as bool? ?? false,
       aiVisualsAvailable: json['ai_visuals_available'] as bool? ?? false,
       aiVisualsProvider: json['ai_visuals_provider'] as String?,
+      characterName: (json['character'] as Map?)?['name'] as String?,
+      characterSource: (json['character'] as Map?)?['source'] as String?,
+      characterFranchise: (json['character'] as Map?)?['franchise'] as String?,
+      recognitionAvailable: (json['character_recognition'] as Map?)?['available'] as bool? ?? false,
+      recognitionProvider: (json['character_recognition'] as Map?)?['provider'] as String?,
       issues: [
         for (final i in (quality?['issues'] as List? ?? const []))
           QualityIssue((i as Map)['code'] as String, i['message'] as String),
