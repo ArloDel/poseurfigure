@@ -284,4 +284,18 @@ class GeneratedImageTest extends TestCase
         $this->withHeader('X-Guest-Key', $this->guestKey)->getJson("/api/v1/analyses/{$this->analysis->public_id}")
             ->assertJsonPath('data.ai_visuals_provider', 'OpenAI');
     }
+
+    public function test_a_declined_photo_is_explained_instead_of_suggesting_a_retry(): void
+    {
+        Queue::fake();
+        $image = GeneratedImage::findOrFail($this->generate()->json('data.id'));
+        $declined = new \Illuminate\Http\Client\RequestException(
+            new \Illuminate\Http\Client\Response(new \GuzzleHttp\Psr7\Response(422, [], '{"detail":"OpenAI returned 400: moderation_blocked"}')));
+
+        (new GeneratePoseImage($image->id))->failed($declined);
+
+        $this->withHeader('X-Guest-Key', $this->guestKey)->getJson("/api/v1/generated-images/{$image->id}")
+            ->assertJsonPath('data.status', 'failed')
+            ->assertJsonPath('data.error.message', "The image service declined this photo, so there's no AI visual for it. The steps above still work.");
+    }
 }

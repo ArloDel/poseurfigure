@@ -97,9 +97,15 @@ class GeneratePoseImage implements ShouldQueue
     {
         Log::warning('AI visual failed', ['generated_image_id' => $this->generatedImageId, 'error' => $e?->getMessage()]);
 
+        // 422 from the AI service: the image service declined this photo (moderation). Trying again won't help;
+        // in testing it was the user's photo itself (a figure aiming a pistol), not the catalog reference.
+        $refused = $e instanceof RequestException && $e->response->status() === 422;
+
         GeneratedImage::whereKey($this->generatedImageId)->update([
             'generation_status' => GenerationStatus::Failed,
-            'failure_message' => "We couldn't make this visual. Try again in a few minutes.",
+            'failure_message' => $refused
+                ? "The image service declined this photo, so there's no AI visual for it. The steps above still work."
+                : "We couldn't make this visual. Try again in a few minutes.",
         ]);
     }
 }
