@@ -127,6 +127,9 @@ class Recommendation(BaseModel):
     # What to change on the user's figure to reach this pose, joint by joint (empty for basis "type_only").
     # action: keep, bend, straighten, raise, lower, lift_leg, lower_leg, unknown.
     changes: list[dict] = []
+    # Pose ideas (/v1/inspire): same_character, similar_look or more; and how alike the figures look (cosine).
+    group: str | None = None
+    look: float | None = None
 
 
 class RecommendResponse(BaseModel):
@@ -138,6 +141,24 @@ class RecommendResponse(BaseModel):
     results: list[Recommendation]
     # Candidates not shown yet; 0 means "show different poses" has nothing new.
     remaining: int = 0
+
+
+class InspireCandidate(Candidate):
+    appearance: list[float] | None = None
+    character: str | None = None
+
+
+class InspireRequest(BaseModel):
+    """Pose ideas for a figure: same character first, then figures that look alike, in poses unlike its own."""
+    profile: str
+    pose: PoseInput | None = None
+    appearance: list[float] | None = None
+    # The character the user confirmed ("Spider-Man (symbiote suit)"); None until they do.
+    character: str | None = None
+    candidates: list[InspireCandidate]
+    figure_limits: dict[str, JointLimit] = {}
+    top_k: int = 8
+    exclude_ids: list[int] = []
 
 
 class GenerateRequest(BaseModel):

@@ -14,11 +14,12 @@ from PIL import Image
 
 from app.config import Settings, get_settings
 from app.schemas.analysis import (
-    AnalyzeResponse, GenerateRequest, GenerateResponse, RecommendRequest, RecommendResponse, SkeletonProfile,
+    AnalyzeResponse, GenerateRequest, GenerateResponse, InspireRequest, RecommendRequest, RecommendResponse, SkeletonProfile,
 )
 from app.services.figure_identifier import FigureIdentifier, IdentifyFailed, build_identifier
 from app.services.image_quality import UnreadableImage, assess, load_image
 from app.services.image_generator import GenerationFailed, ImageGenerator, build_generator, build_prompt, validate
+from app.services.inspiration import inspire
 from app.services.pipeline import Pipeline
 from app.services.pose_matcher import mirror, to_view
 from app.services.recommender import rank
@@ -117,6 +118,15 @@ def recommend_poses(request: RecommendRequest, settings: Settings = Depends(get_
     if request.profile not in known:
         raise HTTPException(422, f"Unknown profile '{request.profile}'. Known: {', '.join(sorted(known))}.")
     return rank(request, known[request.profile])
+
+
+@app.post("/v1/inspire")
+def inspire_poses(request: InspireRequest, settings: Settings = Depends(get_settings)) -> RecommendResponse:
+    """Pose ideas: the same character first, then figures that look alike, in poses unlike the figure's own."""
+    known = load_profiles(settings.skeleton_profiles_path)
+    if request.profile not in known:
+        raise HTTPException(422, f"Unknown profile '{request.profile}'. Known: {', '.join(sorted(known))}.")
+    return inspire(request, known[request.profile])
 
 
 @app.post("/v1/identify")
