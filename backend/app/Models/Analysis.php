@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
     'public_id', 'user_id', 'guest_key_hash', 'figure_id', 'figure_profile_id', 'analysis_mode', 'status',
     'image_disk', 'image_path', 'image_mime', 'image_size', 'image_width', 'image_height',
     'pose_data', 'quality', 'ai_model_version', 'failure_code', 'failure_message',
-    'attempts', 'started_at', 'completed_at',
+    'attempts', 'started_at', 'completed_at', 'character_name', 'character_source', 'character_details',
 ])]
 class Analysis extends Model
 {
@@ -33,6 +33,7 @@ class Analysis extends Model
             'analysis_mode' => AnalysisMode::class,
             'status' => AnalysisStatus::class,
             'pose_data' => 'array',
+            'character_details' => 'array',
             'quality' => 'array',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',

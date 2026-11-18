@@ -13,6 +13,21 @@ return [
     'catalog_path' => env('CATALOG_PATH', base_path('../shared/catalog/poses.json')),
 
     /*
+    | How each catalog figure looks (SigLIP 2 embeddings), written by ai-service/catalog/enrich.py.
+    */
+    'appearance_path' => env('APPEARANCE_PATH', base_path('../shared/catalog/appearance.json')),
+
+    /*
+    | Naming the character a figure shows, so pose ideas show that character first. Needs a provider in the
+    | AI service (AI_IDENTIFY_PROVIDER). Without it the user can still type the name.
+    */
+    'character' => [
+        'enabled' => (bool) env('CHARACTER_RECOGNITION_ENABLED', false),
+        // Named before the user agrees to send their photo. Null = "an image service".
+        'provider_name' => env('CHARACTER_PROVIDER_NAME'),
+    ],
+
+    /*
     | Optional AI visuals (PRD 8.6). Off unless a provider is configured in the AI service.
     */
     'generation' => [
@@ -31,6 +46,8 @@ return [
     'recommendations' => [
         // PRD REC-01: 3-5 recommendations per analysis.
         'count' => (int) env('RECOMMENDATION_COUNT', 5),
+        // Pose ideas shown as a grid: more of them than ranked matches.
+        'ideas_count' => (int) env('POSE_IDEAS_COUNT', 8),
     ],
 
     /*

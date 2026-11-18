@@ -23,6 +23,15 @@ class PoseCatalogSeeder extends Seeder
         }
 
         $catalog = json_decode((string) file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
+        // Figure looks for pose ideas. Optional: without the file, ideas fall back to pose matching.
+        $looks = [];
+        $appearancePath = config('figurepose.appearance_path');
+        if (is_file($appearancePath)) {
+            $file = json_decode((string) file_get_contents($appearancePath), true, flags: JSON_THROW_ON_ERROR);
+            foreach ($file['embeddings'] ?? [] as $slug => $embedding) {
+                $looks[$slug] = ['embedding' => $embedding, 'version' => $file['version'] ?? null];
+            }
+        }
         $profiles = FigureProfile::pluck('id', 'slug');
         $seen = [];
 
@@ -49,6 +58,10 @@ class PoseCatalogSeeder extends Seeder
                     'reference_image' => $pose['image']['path'],
                     'reference_credit' => $pose['credit'],
                     'is_published' => (bool) $pose['published'],
+                    'character_name' => $pose['character'] ?? null,
+                    'character_variant' => $pose['variant'] ?? null,
+                    'franchise' => $pose['franchise'] ?? null,
+                    'appearance' => $looks[$pose['slug']] ?? null,
                 ],
             );
         }

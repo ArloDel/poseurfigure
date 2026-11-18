@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'figure_profile_id', 'slug', 'name', 'category', 'difficulty', 'description',
     'joint_positions', 'constraints', 'instructions', 'reference_image', 'reference_credit', 'is_published',
+    'character_name', 'character_variant', 'franchise', 'appearance',
 ])]
 class PoseCatalog extends Model
 {
@@ -22,6 +23,7 @@ class PoseCatalog extends Model
             'constraints' => 'array',
             'instructions' => 'array',
             'reference_credit' => 'array',
+            'appearance' => 'array',
             'is_published' => 'boolean',
         ];
     }
