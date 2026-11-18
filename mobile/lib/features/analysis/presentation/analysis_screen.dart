@@ -13,6 +13,7 @@ import '../../../shared/widgets/comic_panel.dart';
 import '../../../shared/widgets/glass_panel.dart';
 import '../data/analysis_repository.dart';
 import '../domain/analysis.dart';
+import 'widgets/character_card.dart';
 import 'widgets/recommendation_list.dart';
 import 'widgets/skeleton_overlay.dart';
 
@@ -97,6 +98,24 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     }
   }
 
+  bool _naming = false;
+
+  /// Runs a character change on the server (recognize, type, clear) and shows the re-ranked ideas.
+  Future<void> _character(Future<(Analysis, String)> Function() call) async {
+    setState(() => _naming = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final (updated, message) = await call();
+      if (!mounted) return;
+      setState(() => _analysis = updated);
+      if (message.isNotEmpty) messenger.showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _naming = false);
+    }
+  }
+
   Future<void> _showDifferent() async {
     setState(() => _refreshing = true);
     final messenger = ScaffoldMessenger.of(context);
@@ -150,6 +169,13 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 const SizedBox(height: 14),
               ],
               if (done && a!.pose != null) ...[
+                CharacterCard(
+                  analysis: a,
+                  busy: _naming,
+                  onRecognize: () => _character(() => ref.read(analysisRepositoryProvider).recognizeCharacter(a.id)),
+                  onName: (name) => _character(() => ref.read(analysisRepositoryProvider).setCharacter(a.id, name)),
+                ),
+                const SizedBox(height: 14),
                 _JointsCard(pose: a.pose!),
                 const SizedBox(height: 26),
                 RecommendationList(analysis: a, busy: _refreshing, onShowDifferent: _showDifferent),

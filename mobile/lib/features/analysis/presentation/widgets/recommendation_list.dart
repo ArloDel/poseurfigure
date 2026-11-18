@@ -30,6 +30,7 @@ class RecommendationList extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final recs = analysis.recommendations;
     final typeName = (profileNames[analysis.profile] ?? 'this').toLowerCase();
+    if (recs.any((r) => r.group != null)) return _ideas(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -76,6 +77,99 @@ class RecommendationList extends StatelessWidget {
                   style: text.bodySmall, textAlign: TextAlign.center),
       ],
     );
+  }
+}
+
+extension on RecommendationList {
+  /// Pose ideas as a grid, grouped: the same character first, then figures that look like this one.
+  Widget _ideas(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final recs = analysis.recommendations;
+    final character = analysis.characterName;
+    final hasSame = recs.any((r) => r.group == 'same_character');
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('Pose ideas for your figure', style: text.titleLarge),
+      if (character != null && !hasSame) ...[
+        const SizedBox(height: 6),
+        Text('No $character poses in our collection yet. These figures look like yours.', style: text.bodyMedium),
+      ],
+      for (final MapEntry(key: group, value: title) in ideaGroups.entries)
+        if (recs.where((r) => (r.group ?? 'more') == group).toList() case final items when items.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Semantics(
+            header: true,
+            child: Text(title,
+                style: const TextStyle(
+                  fontFamily: 'BowlbyOne',
+                  fontSize: 16,
+                  color: AppColors.yellow,
+                  shadows: [Shadow(color: AppColors.line, offset: Offset(1.5, 1.5))],
+                )),
+          ),
+          const SizedBox(height: 10),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.62,
+            children: [for (final r in items) _IdeaTile(rec: r, analysisId: analysis.id)],
+          ),
+        ],
+      const SizedBox(height: 18),
+      if (analysis.moreRecommendations)
+        ComicButton(
+          label: 'Show different poses',
+          icon: Icons.refresh_rounded,
+          style: ComicButtonStyle.ghost,
+          busy: busy,
+          expand: true,
+          onPressed: onShowDifferent,
+        )
+      else
+        Text("That's every pose we have for this figure type so far.", style: text.bodySmall, textAlign: TextAlign.center),
+    ]);
+  }
+}
+
+/// One pose idea in the grid: photo, name, why it's here. Tap for the steps from your figure.
+class _IdeaTile extends StatelessWidget {
+  const _IdeaTile({required this.rec, required this.analysisId});
+
+  final PoseRecommendation rec;
+  final String analysisId;
+
+  @override
+  Widget build(BuildContext context) {
+    final pose = rec.pose;
+    final why = [for (final r in rec.reasons) if (reasonLabels[r] != null && r != 'check_joints') reasonLabels[r]!];
+    return Stack(children: [
+      Semantics(
+        button: true,
+        label: '${pose.name}, ${pose.meta}${why.isEmpty ? '' : ', ${why.join(', ')}'}',
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: () => context.push(Uri(path: '/poses/${pose.id}', queryParameters: {
+            if (rec.mirrored) 'mirrored': '1',
+            'analysis': analysisId,
+          }).toString()),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Expanded(child: ComicPanel(child: PosePhoto(url: pose.imageUrl))),
+            const SizedBox(height: 8),
+            Text(pose.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+            const SizedBox(height: 4),
+            Wrap(spacing: 4, runSpacing: 4, children: [
+              for (final w in why.take(2)) _ReasonChip(label: w),
+              if (rec.reasons.contains('check_joints')) const _ReasonChip(label: 'Check joints', warn: true),
+            ]),
+          ]),
+        ),
+      ),
+      Positioned(right: 6, top: 6, child: _SaveHeart(pose: pose)),
+    ]);
   }
 }
 
@@ -233,7 +327,11 @@ class _ReasonChip extends StatelessWidget {
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         if (warn) ...[const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.white), const SizedBox(width: 4)],
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        // Grid tiles are narrow: a long label shortens instead of overflowing.
+        Flexible(
+          child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        ),
       ]),
     );
   }
