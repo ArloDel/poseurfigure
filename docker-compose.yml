@@ -32,6 +32,8 @@ x-backend-env: &backend-env
   # Naming the figure's character (pose ideas: same character first). Needs AI_IDENTIFY_PROVIDER in the ai service.
   CHARACTER_RECOGNITION_ENABLED: ${CHARACTER_RECOGNITION_ENABLED:-false}
   CHARACTER_PROVIDER_NAME: ${CHARACTER_PROVIDER_NAME:-}
+  # Pose references from Pinterest. PERSONAL INSTANCES ONLY (Pinterest's terms, photos belong to their posters).
+  POSE_IDEAS_PINTEREST: ${POSE_IDEAS_PINTEREST:-false}
   GENERATION_PROVIDER_NAME: ${GENERATION_PROVIDER_NAME:-}
   # Longer than the slowest job (AI visuals: 120 s), so a running job is never started a second time.
   REDIS_QUEUE_RETRY_AFTER: "150"
@@ -60,7 +62,7 @@ services:
   worker:
     build: ./backend
     container_name: figurepose-worker
-    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--backoff=5", "--timeout=130"]
+    command: ["php", "artisan", "queue:work", "redis", "--queue=default,references", "--tries=3", "--backoff=5", "--timeout=130"]
     environment: *backend-env
     volumes:
       - ./backend:/var/www
@@ -92,6 +94,8 @@ services:
       # "openai": names the character a figure shows (billed per photo the user agrees to send).
       AI_IDENTIFY_PROVIDER: ${AI_IDENTIFY_PROVIDER:-none}
       AI_OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gpt-5.4}
+      # Same switch as the backend's POSE_IDEAS_PINTEREST: personal instances only.
+      AI_PINTEREST_ENABLED: ${POSE_IDEAS_PINTEREST:-false}
     volumes:
       - ./shared:/shared:ro
       - model_cache:/models
