@@ -12,7 +12,9 @@ class FavoriteResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'pose' => (new PoseResource($this->pose))->resolve($request),
+            'pose' => $this->pose_reference_id
+                ? (new ReferencePoseResource($this->reference))->resolve($request)
+                : (new PoseResource($this->pose))->resolve($request),
             'saved_at' => $this->created_at?->toIso8601String(),
         ];
     }

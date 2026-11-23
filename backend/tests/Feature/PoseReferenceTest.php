@@ -226,4 +226,33 @@ class PoseReferenceTest extends TestCase
         $this->assertSame(0, $search->fresh()->found);
         Storage::disk('s3')->assertMissing($path);
     }
+
+    public function test_a_reference_can_be_saved_to_favorites_and_opened_on_its_own(): void
+    {
+        Queue::fake();
+        $this->fakeAi();
+        $search = ReferenceSearch::create(['character_key' => 'spiderman', 'character_name' => 'Spider-Man',
+            'figure_profile_id' => FigureProfile::where('slug', 'humanoid_v1')->value('id'), 'status' => 'running', 'total' => 1]);
+        app()->call([new ReadPoseReference($search->id, 'https://i.pinimg.com/originals/a.jpg'), 'handle']);
+        $ref = PoseReference::sole();
+        $user = \App\Models\User::factory()->create();
+        $pose = \App\Models\PoseCatalog::where('slug', 'stop-hand')->firstOrFail();
+
+        $this->actingAs($user)->postJson('/api/v1/favorites', ['reference_id' => $ref->id])->assertCreated()
+            ->assertJsonPath('data.pose.kind', 'reference')->assertJsonPath('data.pose.id', $ref->id);
+        $this->actingAs($user)->postJson('/api/v1/favorites', ['reference_id' => $ref->id])->assertOk(); // saved once
+        $this->actingAs($user)->postJson('/api/v1/favorites', ['pose_id' => $pose->id])->assertCreated();
+        $this->actingAs($user)->postJson('/api/v1/favorites', ['pose_id' => $pose->id, 'reference_id' => $ref->id])->assertStatus(422);
+
+        $list = $this->actingAs($user)->getJson('/api/v1/favorites')->assertOk()->json('data');
+        $this->assertEqualsCanonicalizing(['reference', null], array_map(fn ($f) => $f['pose']['kind'] ?? null, $list));
+
+        $this->getJson("/api/v1/pose-references/{$ref->id}")->assertOk()->assertJsonPath('data.source', 'pinterest');
+
+        // A reference rejected later disappears from favorites and can't be saved or opened.
+        $ref->update(['status' => 'rejected']);
+        $this->actingAs($user)->getJson('/api/v1/favorites')->assertJsonCount(1, 'data');
+        $this->actingAs($user)->postJson('/api/v1/favorites', ['reference_id' => $ref->id])->assertStatus(422);
+        $this->getJson("/api/v1/pose-references/{$ref->id}")->assertNotFound();
+    }
 }

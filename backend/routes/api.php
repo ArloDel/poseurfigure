@@ -42,6 +42,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/poses/{pose}/generate', [GeneratedImageController::class, 'store'])
         ->whereNumber('pose')->middleware('throttle:generation');
     // Pinterest references (personal instances): private images behind an expiring link.
+    Route::get('/pose-references/{poseReference}', [PoseReferenceController::class, 'show'])->whereNumber('poseReference');
     Route::get('/pose-references/{poseReference}/image', [PoseReferenceController::class, 'image'])
         ->whereNumber('poseReference')->middleware('signed')->name('pose-references.image');
     Route::get('/generated-images/{generatedImage}', [GeneratedImageController::class, 'show'])->whereNumber('generatedImage');

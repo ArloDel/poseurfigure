@@ -3,36 +3,14 @@
 namespace App\Http\Resources;
 
 use App\Enums\AnalysisStatus;
-use App\Models\PoseReference;
 use App\Models\ReferenceSearch;
 use App\Support\CharacterKey;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin \App\Models\Analysis */
 class AnalysisResource extends JsonResource
 {
-    /** A Pinterest reference in the shape of a catalog pose, so the app can show both the same way. */
-    private static function reference(PoseReference $ref): array
-    {
-        return [
-            'id' => $ref->id,
-            'kind' => 'reference',
-            'slug' => 'reference-'.$ref->id,
-            'name' => $ref->character_name,
-            'category' => 'pinterest',
-            'difficulty' => '',
-            'profile' => $ref->profile?->slug,
-            // Found on Pinterest: not a curated catalog reference, and not AI-generated either.
-            'source' => 'pinterest',
-            'image_url' => URL::temporarySignedRoute('pose-references.image',
-                now()->addMinutes((int) config('figurepose.references.url_ttl_minutes')), ['poseReference' => $ref->id]),
-            'image_credit' => null,
-            'source_url' => $ref->source_url,
-        ];
-    }
-
     public function toArray(Request $request): array
     {
         $final = $this->status->isFinal();
@@ -74,7 +52,7 @@ class AnalysisResource extends JsonResource
                     'group' => $r->details['group'] ?? null,
                     'look' => $r->details['look'] ?? null,
                     'pose' => $r->pose_reference_id
-                        ? self::reference($r->reference)
+                        ? (new ReferencePoseResource($r->reference))->resolve($request)
                         : (new PoseResource($r->pose))->resolve($request),
                 ])->all(),
             ),
