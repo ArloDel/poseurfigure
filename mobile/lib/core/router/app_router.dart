@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/analysis/presentation/analysis_screen.dart';
+import '../../features/analysis/presentation/reference_detail_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/favorites/presentation/favorites_screen.dart';
 import '../../features/history/presentation/history_screen.dart';
@@ -32,6 +33,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           poseId: int.parse(state.pathParameters['id']!),
           mirrored: state.uri.queryParameters['mirrored'] == '1',
           analysisId: state.uri.queryParameters['analysis'],
+        ),
+      ),
+      GoRoute(
+        path: '/references/:id',
+        builder: (_, state) => ReferenceDetailScreen(
+          referenceId: int.parse(state.pathParameters['id']!),
+          analysisId: state.uri.queryParameters['analysis'] ?? '',
         ),
       ),
       GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),

@@ -63,7 +63,13 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         _analysis = a;
         _error = null;
       });
-      if (a.status.isFinal) return;
+      if (a.status.isFinal) {
+        // Pinterest poses arrive in the background: keep refreshing while that search runs.
+        if (a.references?.isRunning == true && DateTime.now().difference(_started) < const Duration(minutes: 20)) {
+          _timer = Timer(const Duration(seconds: 5), _poll);
+        }
+        return;
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '$e');
@@ -108,6 +114,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       final (updated, message) = await call();
       if (!mounted) return;
       setState(() => _analysis = updated);
+      if (updated.references?.isRunning == true) {
+        _timer?.cancel();
+        _started = DateTime.now();
+        _timer = Timer(const Duration(seconds: 5), _poll);
+      }
       if (message.isNotEmpty) messenger.showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));

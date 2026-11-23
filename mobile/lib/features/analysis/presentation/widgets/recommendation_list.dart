@@ -99,6 +99,10 @@ extension on RecommendationList {
                 : 'No $character poses in our collection yet, and no figures that look much like it. Here are other poses to try.',
             style: text.bodyMedium),
       ],
+      if (analysis.references case final refs?) ...[
+        const SizedBox(height: 12),
+        _ReferenceProgress(progress: refs, character: character ?? 'this character'),
+      ],
       for (final MapEntry(key: group, value: title) in ideaGroups.entries)
         if (recs.where((r) => (r.group ?? 'more') == group).toList() case final items when items.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -156,12 +160,21 @@ class _IdeaTile extends StatelessWidget {
         label: '${pose.name}, ${pose.meta}${why.isEmpty ? '' : ', ${why.join(', ')}'}',
         excludeSemantics: true,
         child: GestureDetector(
-          onTap: () => context.push(Uri(path: '/poses/${pose.id}', queryParameters: {
-            if (rec.mirrored) 'mirrored': '1',
-            'analysis': analysisId,
-          }).toString()),
+          onTap: () => context.push(pose.isReference
+              ? Uri(path: '/references/${pose.id}', queryParameters: {'analysis': analysisId}).toString()
+              : Uri(path: '/poses/${pose.id}', queryParameters: {
+                  if (rec.mirrored) 'mirrored': '1',
+                  'analysis': analysisId,
+                }).toString()),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Expanded(child: ComicPanel(child: PosePhoto(url: pose.imageUrl))),
+            Expanded(
+              child: ComicPanel(
+                child: Stack(fit: StackFit.expand, children: [
+                  PosePhoto(url: pose.imageUrl),
+                  if (pose.isReference) const Positioned(left: 6, top: 6, child: _PinterestBadge()),
+                ]),
+              ),
+            ),
             const SizedBox(height: 8),
             Text(pose.name, maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
@@ -173,8 +186,69 @@ class _IdeaTile extends StatelessWidget {
           ]),
         ),
       ),
-      Positioned(right: 6, top: 6, child: _SaveHeart(pose: pose)),
+      // Favorites hold catalog poses; Pinterest references aren't saved there.
+      if (!pose.isReference) Positioned(right: 6, top: 6, child: _SaveHeart(pose: pose)),
     ]);
+  }
+}
+
+class _PinterestBadge extends StatelessWidget {
+  const _PinterestBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.red,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.line, width: 2),
+      ),
+      child: const Text('Pinterest', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Colors.white)),
+    );
+  }
+}
+
+/// "Finding Spider-Man poses on Pinterest... 6/20". The grid fills in as images are read.
+class _ReferenceProgress extends StatelessWidget {
+  const _ReferenceProgress({required this.progress, required this.character});
+
+  final ReferenceSearchProgress progress;
+  final String character;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = progress;
+    final (title, body) = switch (p.status) {
+      'running' => (
+          'Finding $character poses on Pinterest',
+          p.total == 0
+              ? 'Searching...'
+              : 'Checked ${p.checked} of ${p.total} photos, ${p.found} usable so far. New ones appear below as they are read.',
+        ),
+      'failed' => ("Couldn't search Pinterest", p.error ?? 'Try again later.'),
+      _ => p.found == 0
+          ? ('No usable Pinterest photos', 'None of the photos found for $character showed a full, readable pose.')
+          : ('${p.found} poses from Pinterest', 'Kept for your own reference.'),
+    };
+    return GlassPanel(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          if (p.isRunning)
+            const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.yellow))
+          else
+            const Icon(Icons.push_pin_rounded, size: 18, color: AppColors.red),
+          const SizedBox(width: 10),
+          Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800))),
+        ]),
+        const SizedBox(height: 6),
+        Text(body, style: const TextStyle(fontSize: 13, color: AppColors.mute)),
+        if (p.isRunning && p.total > 0) ...[
+          const SizedBox(height: 10),
+          LinearProgressIndicator(value: p.checked / p.total, color: AppColors.yellow, backgroundColor: Colors.white24),
+        ],
+      ]),
+    );
   }
 }
 
