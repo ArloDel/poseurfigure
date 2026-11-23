@@ -62,6 +62,24 @@ curl -s -X POST http://localhost:8000/api/v1/analyses \
 
 Then poll `GET /api/v1/analyses/{analysis_id}` with the same `X-Guest-Key` until `status` is `completed` or `failed`.
 
+### Keeping the laptop responsive
+
+The AI service is the heavy part: three models and CPU inference. Two things keep Windows usable while it runs:
+
+- **The AI container is capped** in `docker-compose.yml`: 4 CPUs, 4 GB RAM, and PyTorch limited to 4 threads (`OMP_NUM_THREADS`). Without the thread limit an analysis used every core and the whole laptop froze.
+- **WSL 2 is capped** in `%UserProfile%\.wslconfig` (Docker Desktop runs inside it). On a 15 GB, 12-thread laptop:
+
+  ```ini
+  [wsl2]
+  memory=6GB
+  processors=6
+  swap=4GB
+  ```
+
+  Apply with `wsl --shutdown`, then start Docker Desktop again.
+
+Measured with these limits (November 2026, Ryzen 5 5600H): models ready 38 s after start, an analysis 20 to 31 s, the AI container peaking at about 3 CPU cores and under 1 GB RAM. Run one stack at a time (not the dev and production-like stacks together), and quit Docker Desktop when you're not working on the app.
+
 ## Run the mobile app
 
 ```bash
