@@ -255,4 +255,13 @@ class PoseReferenceTest extends TestCase
         $this->actingAs($user)->postJson('/api/v1/favorites', ['reference_id' => $ref->id])->assertStatus(422);
         $this->getJson("/api/v1/pose-references/{$ref->id}")->assertNotFound();
     }
+
+    public function test_character_keys_match_names_typed_in_different_ways(): void
+    {
+        $this->assertTrue(\App\Support\CharacterKey::same('Spider-Man (symbiote suit)', 'Spider Man symbiote suit'));
+        $this->assertTrue(\App\Support\CharacterKey::same('spiderman', 'Spider-Man'));
+        $this->assertFalse(\App\Support\CharacterKey::same('Spider-Man', 'Iron Man'));
+        $this->assertFalse(\App\Support\CharacterKey::same('Ex', 'Exia'));
+        $this->assertFalse(\App\Support\CharacterKey::same(null, 'Spider-Man'));
+    }
 }

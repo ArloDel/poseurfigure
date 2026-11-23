@@ -71,6 +71,14 @@ def test_character_key_ignores_case_punctuation_and_variant():
     assert normalize({"character": "Spider-Man", "figure_line": "Unknown"}, "m")["figure_line"] == ""
 
 
+def test_same_character_accepts_names_typed_without_brackets():
+    from app.services.figure_identifier import same_character
+    assert same_character("Spider-Man (symbiote suit)", "Spider Man symbiote suit")
+    assert same_character("spiderman", "Spider-Man")
+    assert not same_character("Spider-Man", "Iron Man") and not same_character("", "Spider-Man")
+    assert not same_character("Ex", "Exia")  # too short to match by prefix
+
+
 def test_build_identifier():
     assert build_identifier("none") is None
     with pytest.raises(ValueError):

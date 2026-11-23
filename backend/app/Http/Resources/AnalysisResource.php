@@ -75,9 +75,14 @@ class AnalysisResource extends JsonResource
                     $key = CharacterKey::from($this->character_name);
                     $search = $key === '' ? null : ReferenceSearch::where('character_key', $key)->first();
 
+                    // "found" counts every usable reference of this character, also from searches under a related
+                    // name ("Spider Man symbiote suit" and "Spider-Man"); progress is this search's.
+                    $found = \App\Models\PoseReference::accepted()->pluck('character_name')
+                        ->filter(fn ($name) => CharacterKey::same($name, $this->character_name))->count();
+
                     return $search === null ? null : [
                         'status' => $search->status, 'total' => $search->total, 'checked' => $search->checked,
-                        'found' => $search->found, 'error' => $search->error,
+                        'found' => $search->status === 'running' ? $search->found : $found, 'error' => $search->error,
                     ];
                 }),
             'character_recognition' => $this->when($this->status === AnalysisStatus::Completed, fn () => [

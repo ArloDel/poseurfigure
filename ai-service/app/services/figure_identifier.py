@@ -59,6 +59,17 @@ def character_key(name: str | None) -> str:
     return re.sub(r"[^a-z0-9]", "", base)
 
 
+def same_character(a: str | None, b: str | None) -> bool:
+    """Whether two names are the same character. Names are typed in many ways: "Spider Man symbiote suit" (no
+    brackets) gives "spidermansymbiotesuit", which starts with "spiderman", so it still counts. Short keys
+    (under 4 letters) must match exactly, so "Ex" doesn't match "Exia"."""
+    ka, kb = character_key(a), character_key(b)
+    if not ka or not kb:
+        return False
+    short, long_ = sorted((ka, kb), key=len)
+    return ka == kb or (len(short) >= 4 and long_.startswith(short))
+
+
 class OpenAIIdentifier:
     name = "openai"
     URL = "https://api.openai.com/v1/chat/completions"

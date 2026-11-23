@@ -23,7 +23,7 @@ from __future__ import annotations
 import math
 
 from app.schemas.analysis import InspireRequest, Recommendation, RecommendResponse, SkeletonProfile
-from app.services.figure_identifier import character_key
+from app.services.figure_identifier import same_character
 from app.services.pose_changes import changes
 from app.services.pose_extractor import joint_angles
 from app.services.pose_matcher import feasibility, match, to_view
@@ -50,7 +50,6 @@ def inspire(request: InspireRequest, profile: SkeletonProfile) -> RecommendRespo
     query = to_view(request.pose.keypoints, request.pose.image_size) if request.pose else None
     basis = _basis(query) if query is not None else "type_only"
     limits = {j: lim.model_dump() for j, lim in request.figure_limits.items()}
-    key = character_key(request.character)
     excluded = set(request.exclude_ids)
 
     rows = []
@@ -70,7 +69,7 @@ def inspire(request: InspireRequest, profile: SkeletonProfile) -> RecommendRespo
             by_similarity = (SAME_POSE - m.similarity) / (SAME_POSE - NEW_POSE)
             biggest = max((abs(s["delta"]) for s in steps if s.get("delta") is not None), default=0.0)
             novelty = min(1.0, max(0.0, by_similarity, biggest / BIG_MOVE))
-        same = bool(key) and character_key(c.character) == key
+        same = same_character(request.character, c.character)
         score = W_LOOK * (look if look is not None else 0.5) + W_NOVELTY * novelty + W_FEAS * f.score
         rows.append({"c": c, "view": view, "m": m, "f": f, "look": look, "novelty": novelty, "same": same, "score": score,
                      "steps": steps})

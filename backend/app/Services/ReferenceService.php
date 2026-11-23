@@ -61,11 +61,12 @@ class ReferenceService
     /** Ranks again the recent analyses of this character, so new references show up in their ideas. */
     public function refreshAnalyses(string $characterKey): void
     {
+        // Keys of related names ("spiderman", "spidermansymbiotesuit") count as the same character.
         Analysis::with('profile')
             ->whereNotNull('character_name')
             ->where('updated_at', '>', now()->subDays(3))
             ->latest('id')->limit(50)->get()
-            ->filter(fn (Analysis $a) => CharacterKey::from($a->character_name) === $characterKey)
+            ->filter(fn (Analysis $a) => CharacterKey::same($a->character_name, $characterKey))
             ->each(fn (Analysis $a) => $this->recommendations->rerank($a));
     }
 }
