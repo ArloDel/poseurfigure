@@ -43,6 +43,19 @@ return [
         'request_timeout' => (int) env('GENERATION_REQUEST_TIMEOUT', 110),
     ],
 
+    /*
+    | Pose references found on Pinterest (AI service: AI_PINTEREST_ENABLED). PERSONAL INSTANCES ONLY: Pinterest's
+    | terms don't allow automated collection and the photos belong to their posters. Never enable on a server
+    | other people use.
+    */
+    'references' => [
+        'pinterest' => (bool) env('POSE_IDEAS_PINTEREST', false),
+        'per_search' => (int) env('POSE_IDEAS_PINTEREST_IMAGES', 20),
+        // Search a character again after this many days, for new photos.
+        'refresh_days' => (int) env('POSE_IDEAS_PINTEREST_REFRESH_DAYS', 30),
+        'url_ttl_minutes' => 60,
+    ],
+
     'recommendations' => [
         // PRD REC-01: 3-5 recommendations per analysis.
         'count' => (int) env('RECOMMENDATION_COUNT', 5),

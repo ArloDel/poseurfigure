@@ -71,6 +71,22 @@ class AIService
             ->json();
     }
 
+    /** Image URLs for a query on Pinterest (personal instances only). @return list<string> */
+    public function searchReferences(string $query, int $limit): array
+    {
+        return $this->client()->timeout(60)
+            ->post('/v1/references/search', ['query' => $query, 'limit' => $limit])
+            ->throw()->json('urls') ?? [];
+    }
+
+    /** Downloads one found image and reads its pose. @return array<string, mixed> */
+    public function readReference(string $url, string $profile): array
+    {
+        return $this->client()->timeout(100)
+            ->post('/v1/references/read', ['url' => $url, 'profile' => $profile])
+            ->throw()->json();
+    }
+
     /**
      * Suggests the character a figure shows (/v1/identify). $bbox is the selected figure's box, normalized.
      *

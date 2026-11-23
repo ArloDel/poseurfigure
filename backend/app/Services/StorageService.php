@@ -38,6 +38,19 @@ class StorageService
         return ['disk' => $disk, 'path' => $path];
     }
 
+    /** A pose reference found on Pinterest: private, served only through an expiring link. */
+    public function storeReference(string $bytes, string $name): array
+    {
+        $disk = config('figurepose.image_disk');
+        $path = 'references/'.now()->format('Y/m')."/{$name}.jpg";
+
+        if (! Storage::disk($disk)->put($path, $bytes, ['visibility' => 'private'])) {
+            throw new RuntimeException('Could not store the reference image.');
+        }
+
+        return ['disk' => $disk, 'path' => $path];
+    }
+
     public function read(string $disk, string $path): string
     {
         $contents = Storage::disk($disk)->get($path);
