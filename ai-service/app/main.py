@@ -22,6 +22,7 @@ from app.services.image_generator import GenerationFailed, ImageGenerator, build
 from app.services.inspiration import inspire
 from app.services.pipeline import Pipeline
 from app.services.pose_matcher import mirror, to_view
+from app.services import web_references
 from app.services.recommender import rank
 from app.services.profiles import load_profiles
 
@@ -60,6 +61,22 @@ def get_pipeline() -> Pipeline | None:
 def get_generator() -> ImageGenerator | None:
     s = get_settings()
     return build_generator(s.generation_provider, s)
+
+
+@lru_cache
+def _pinterest(pause: float) -> web_references.PinterestSearch:
+    return web_references.PinterestSearch(pause=pause)
+
+
+def get_pinterest() -> web_references.PinterestSearch | None:
+    s = get_settings()
+    return _pinterest(s.pinterest_pause) if s.pinterest_enabled else None
+
+
+@lru_cache
+def _download_client():
+    import httpx
+    return httpx.Client(timeout=30.0, follow_redirects=True)
 
 
 def get_identifier() -> FigureIdentifier | None:
@@ -102,7 +119,7 @@ def health(settings: Settings = Depends(get_settings)) -> dict:
     profiles = load_profiles(settings.skeleton_profiles_path)
     return {"status": "ok", "service": settings.service_name, "version": settings.version,
             "models_enabled": settings.models_enabled, "generation_provider": settings.generation_provider,
-            "identify_provider": settings.identify_provider,
+            "identify_provider": settings.identify_provider, "pinterest_enabled": settings.pinterest_enabled,
             "profiles": sorted(profiles)}
 
 
@@ -127,6 +144,53 @@ def inspire_poses(request: InspireRequest, settings: Settings = Depends(get_sett
     if request.profile not in known:
         raise HTTPException(422, f"Unknown profile '{request.profile}'. Known: {', '.join(sorted(known))}.")
     return inspire(request, known[request.profile])
+
+
+@app.post("/v1/references/search")
+def search_references(body: dict, pinterest=Depends(get_pinterest)) -> dict:
+    """Image URLs for a query like "Spider-Man (symbiote suit) figure". Personal instances only."""
+    if pinterest is None:
+        raise HTTPException(503, "Pinterest pose ideas are off on this server.")
+    query = str(body.get("query") or "").strip()
+    if not query or len(query) > 160:
+        raise HTTPException(422, "query must be 1-160 characters.")
+    limit = max(1, min(50, int(body.get("limit") or 25)))
+    try:
+        return {"query": query, "urls": pinterest.search(query, limit)}
+    except web_references.SearchFailed as exc:
+        log.warning("pinterest search failed: %s", exc)
+        raise HTTPException(502, str(exc)) from exc
+
+
+@app.post("/v1/references/read")
+async def read_reference(
+    body: dict,
+    settings: Settings = Depends(get_settings),
+    pipeline: Pipeline | None = Depends(get_pipeline),
+    pinterest=Depends(get_pinterest),
+) -> dict:
+    """Downloads one found image and reads its pose with the user-photo models. Rejected images say why."""
+    if pinterest is None:
+        raise HTTPException(503, "Pinterest pose ideas are off on this server.")
+    if pipeline is None:
+        raise HTTPException(503, "Models are off on this server.")
+    known = load_profiles(settings.skeleton_profiles_path)
+    profile = known.get(str(body.get("profile")))
+    if profile is None:
+        raise HTTPException(422, "Unknown profile.")
+    url = str(body.get("url") or "")
+    try:
+        image = await run_in_threadpool(web_references.download, url, _download_client())
+    except UnreadableImage as exc:
+        return {"accepted": False, "reason": "unreadable", "detail": str(exc)}
+    except Exception as exc:  # network trouble: the caller may try again later
+        raise HTTPException(502, f"Download failed: {type(exc).__name__}") from exc
+    async with _inference_slot:
+        result = await run_in_threadpool(web_references.read, image, profile, pipeline)
+    if not result.accepted:
+        return {"accepted": False, "reason": result.reason, **result.data}
+    d = result.data
+    return {"accepted": True, "reason": None, "image_base64": base64.b64encode(d.pop("image_jpeg")).decode(), **d}
 
 
 @app.post("/v1/identify")

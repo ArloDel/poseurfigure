@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     openai_vision_model: str = "gpt-5.4"
     identify_timeout: float = 45.0
 
+    # Pose ideas from Pinterest (web_references.py). PERSONAL INSTANCES ONLY: Pinterest's terms don't allow
+    # automated collection, and the photos belong to their posters. Never enable on a server others use.
+    pinterest_enabled: bool = False
+    pinterest_pause: float = 2.0  # seconds between requests to Pinterest
+
 
 @lru_cache
 def get_settings() -> Settings:
