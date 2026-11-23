@@ -206,4 +206,24 @@ class PoseReferenceTest extends TestCase
         (new SearchPoseReferences($search->id))->failed(new \RuntimeException('blocked'));
         $this->assertSame('failed', $search->fresh()->status);
     }
+
+    public function test_recheck_rejects_references_the_current_rules_turn_down(): void
+    {
+        Queue::fake();
+        $this->fakeAi();
+        $search = ReferenceSearch::create(['character_key' => 'spiderman', 'character_name' => 'Spider-Man',
+            'figure_profile_id' => FigureProfile::where('slug', 'humanoid_v1')->value('id'), 'status' => 'running', 'total' => 1]);
+        app()->call([new ReadPoseReference($search->id, 'https://i.pinimg.com/originals/a.jpg'), 'handle']);
+        $ref = PoseReference::sole();
+        $path = $ref->image_path;
+        Storage::disk('s3')->assertExists($path);
+
+        $this->read = ['accepted' => false, 'reason' => 'not_a_figure_photo'];
+        $this->artisan('figurepose:recheck-references')->expectsOutputToContain('Checked 1, rejected 1.')->assertSuccessful();
+
+        $ref->refresh();
+        $this->assertSame(['rejected', 'not_a_figure_photo'], [$ref->status, $ref->reject_reason]);
+        $this->assertSame(0, $search->fresh()->found);
+        Storage::disk('s3')->assertMissing($path);
+    }
 }
