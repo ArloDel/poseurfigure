@@ -188,7 +188,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     const SizedBox(height: 12),
                     const LinearProgressIndicator(color: AppColors.yellow, backgroundColor: Colors.white24),
                     const SizedBox(height: 8),
-                    Text('Usually under 15 seconds.', style: text.bodySmall),
+                    Text('Usually under 30 seconds.', style: text.bodySmall),
                   ]),
                 ),
               if (a?.status == AnalysisStatus.failed)
