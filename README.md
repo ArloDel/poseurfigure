@@ -357,9 +357,21 @@ With `POSE_IDEAS_PINTEREST=true` in `.env`, naming the character (recognized or 
 
 1. The AI service searches Pinterest for "<character> figure" the way Pinterest's own search page does (approach from [pinscrape](https://github.com/iamatulsingh/pinscrape), MIT; pinscrape itself isn't used because it pins an old pydantic that FastAPI can't run with), pausing between requests. It returns up to `POSE_IDEAS_PINTEREST_IMAGES` (20) image URLs.
 2. Each image is read in its own job on the low-priority `references` queue, so an analysis never waits behind them: downloaded from Pinterest's image server only, then read with the same models as user photos. Only full-body, readable poses are kept. No figure, a figure too small in the frame, an incomplete pose (close-ups, figures held in a hand) and near-duplicates (look ≥ 0.97 alike) are rejected and remembered, so they aren't fetched again.
-3. Accepted images are stored privately and join the pose ideas as **Same character**, labelled "Pinterest", with steps from the user's figure. The app shows the search's progress and refreshes as images arrive. A character is searched again after `POSE_IDEAS_PINTEREST_REFRESH_DAYS` (30). References can't be saved to favorites or used for AI visuals yet.
+3. **Only photos of real toys.** A zero-shot SigLIP 2 check scores each picture as a figure photo, game render, illustration, statue or cosplay; below 0.6 for "figure" it is rejected (`not_a_figure_photo`). On 26 black-suit Spider-Man results this removed every render and the statue on a base, kept every figure photo, and lost one Hot Toys figure standing on a diorama.
+4. Accepted images are stored privately and join the pose ideas as **Same character**, labelled "Pinterest", with steps from the user's figure. The app shows the search's progress and refreshes as images arrive. A character is searched again after `POSE_IDEAS_PINTEREST_REFRESH_DAYS` (30).
+5. **Favorites.** A Pinterest pose can be saved like a catalog pose. Opened from Favorites it shows the photo; the steps need an analysis of the figure, and the page says so. References can't be used for AI visuals yet.
 
-**Measured** (November 2026, black-suit Spider-Man, laptop with the CPU limits above): 18 new images found, 13 accepted, 5 rejected (3 no figure, 1 too small, 1 incomplete pose), 5.5 minutes for the first search; every idea then came from the same character. Some accepted images are game renders or statues rather than figure photos: the filter checks for a readable body, not for "is a toy". If Pinterest changes its site, the search stops working (the rest of the app is unaffected) and `/v1/references/search` returns 502.
+**Names typed differently.** "Spider Man symbiote suit" (no brackets) and "Spider-Man (symbiote suit)" are the same character: names are compared by a key without punctuation or bracketed variants, and a key that starts with the other one (4+ letters) counts as the same.
+
+**After changing the rules**, re-read the stored references and drop those that no longer pass:
+
+```bash
+docker compose exec api php artisan figurepose:recheck-references
+```
+
+Adding the figure-photo check this way rejected 7 of 18 stored Spider-Man references, the same 7 it rejected in calibration.
+
+**Measured** (November 2026, black-suit Spider-Man, laptop with the CPU limits above): 18 new images found and read in 5.5 minutes for the first search; with the figure-photo check, 11 are kept, and every idea then came from the same character. If Pinterest changes its site, the search stops working (the rest of the app is unaffected) and `/v1/references/search` returns 502.
 
 ## Pose catalog and matching
 
