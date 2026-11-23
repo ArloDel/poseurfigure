@@ -73,9 +73,14 @@ class Pose {
     this.description,
     this.instructions = const [],
     this.warnings = const [],
+    this.kind = 'catalog',
   });
 
   final int id;
+
+  /// "catalog" (curated pose) or "reference" (found on Pinterest for the figure's character).
+  final String kind;
+  bool get isReference => kind == 'reference';
   final String slug;
   final String name;
   final String category;
@@ -87,12 +92,13 @@ class Pose {
   final List<PoseInstruction> instructions;
   final List<JointWarning> warnings;
 
-  String get meta => '${capitalize(category)}, $difficulty';
+  String get meta => isReference ? 'From Pinterest' : '${capitalize(category)}, $difficulty';
 
   factory Pose.fromJson(Map<String, dynamic> json) {
     final constraints = json['constraints'];
     return Pose(
       id: json['id'] as int,
+      kind: json['kind'] as String? ?? 'catalog',
       slug: json['slug'] as String,
       name: json['name'] as String,
       category: json['category'] as String,

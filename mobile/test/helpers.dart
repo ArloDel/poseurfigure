@@ -127,8 +127,13 @@ class FakeAnalysisRepository implements AnalysisRepository {
     items.removeWhere((a) => a.id == id);
   }
 
+  int fetchCount = 0;
+
   @override
-  Future<Analysis> fetch(String id) async => items.firstWhere((a) => a.id == id);
+  Future<Analysis> fetch(String id) async {
+    fetchCount++;
+    return items.firstWhere((a) => a.id == id);
+  }
 
   @override
   Future<String> start(XFile photo, {int? profileId}) async => 'new-analysis';
@@ -194,6 +199,14 @@ List<Map<String, dynamic>> ideaRecs({bool same = false}) => [
       recJson(2, 2, reasons: ['new_pose'], group: 'more'),
     ];
 
+/// A Pinterest reference idea as the API returns it.
+Map<String, dynamic> refJson(int rank, int id, {List<Map<String, dynamic>> changes = const []}) => {
+      'rank': rank, 'score': 0.8, 'similarity_score': 0.6, 'feasibility_score': 1.0, 'mirrored': false,
+      'reasons': ['same_character', 'new_pose'], 'warnings': [], 'changes': changes, 'group': 'same_character', 'look': 0.9,
+      'pose': {'id': id, 'kind': 'reference', 'slug': 'reference-$id', 'name': 'Spider-Man (symbiote suit)', 'category': 'pinterest',
+        'difficulty': '', 'profile': 'humanoid_v1', 'source': 'pinterest', 'image_url': null},
+    };
+
 /// A completed analysis as the API returns it.
 /// A recommendation as the API returns it, for the sample poses (1 = Rider ready stance, 2 = Rifle aim).
 Map<String, dynamic> recJson(int rank, int poseId,
@@ -213,7 +226,7 @@ Map<String, dynamic> recJson(int rank, int poseId,
 
 Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confidence = 0.9, bool needsConfirmation = false,
     bool byUser = false, List<Map<String, dynamic>> recommendations = const [], bool typeOnly = false, bool more = true, bool visuals = false,
-    String? provider, String? character, String? characterSource, bool recognition = false}) {
+    String? provider, String? character, String? characterSource, bool recognition = false, Map<String, dynamic>? references}) {
   Map<String, dynamic> kp(double x, double y, [String vis = 'visible']) => {'x': x, 'y': y, 'confidence': 0.9, 'visibility': vis};
   return Analysis.fromJson({
     'analysis_id': id,
@@ -229,6 +242,7 @@ Analysis analysisResult(String id, {String profile = 'humanoid_v1', double confi
     'ai_visuals_provider': provider,
     'character': {'name': character, 'source': characterSource, 'franchise': character == null ? null : 'Marvel'},
     'character_recognition': {'available': recognition, 'provider': recognition ? 'OpenAI' : null},
+    'references': references,
     'classification': {'profile': profile, 'confidence': byUser ? 1.0 : confidence, 'needs_confirmation': needsConfirmation,
       'source': byUser ? 'user' : 'model'},
     'pose': {

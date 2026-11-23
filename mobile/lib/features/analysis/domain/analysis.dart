@@ -51,6 +51,7 @@ class Analysis {
     this.characterFranchise,
     this.recognitionAvailable = false,
     this.recognitionProvider,
+    this.references,
   });
 
   final String id;
@@ -90,6 +91,9 @@ class Analysis {
   final bool recognitionAvailable;
   final String? recognitionProvider;
 
+  /// Finding the character's poses on Pinterest (personal instances); null when off or not started.
+  final ReferenceSearchProgress? references;
+
   factory Analysis.fromJson(Map<String, dynamic> json) {
     final error = json['error'] as Map<String, dynamic>?;
     final quality = json['quality'] as Map<String, dynamic>?;
@@ -122,10 +126,33 @@ class Analysis {
       characterFranchise: (json['character'] as Map?)?['franchise'] as String?,
       recognitionAvailable: (json['character_recognition'] as Map?)?['available'] as bool? ?? false,
       recognitionProvider: (json['character_recognition'] as Map?)?['provider'] as String?,
+      references: json['references'] is Map ? ReferenceSearchProgress.fromJson(Map<String, dynamic>.from(json['references'] as Map)) : null,
       issues: [
         for (final i in (quality?['issues'] as List? ?? const []))
           QualityIssue((i as Map)['code'] as String, i['message'] as String),
       ],
     );
   }
+}
+
+/// How far the search for the character's poses on Pinterest has come.
+class ReferenceSearchProgress {
+  const ReferenceSearchProgress({required this.status, this.total = 0, this.checked = 0, this.found = 0, this.error});
+
+  /// running, done or failed.
+  final String status;
+  final int total;
+  final int checked;
+  final int found;
+  final String? error;
+
+  bool get isRunning => status == 'running';
+
+  factory ReferenceSearchProgress.fromJson(Map<String, dynamic> json) => ReferenceSearchProgress(
+        status: json['status'] as String? ?? 'done',
+        total: json['total'] as int? ?? 0,
+        checked: json['checked'] as int? ?? 0,
+        found: json['found'] as int? ?? 0,
+        error: json['error'] as String?,
+      );
 }
