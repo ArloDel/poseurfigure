@@ -10,6 +10,7 @@ use App\Models\Analysis;
 use App\Services\AnalysisService;
 use App\Services\AIService;
 use App\Services\RecommendationService;
+use App\Services\ReferenceService;
 use App\Services\StorageService;
 use App\Support\Requester;
 use Illuminate\Http\Client\ConnectionException;
@@ -126,6 +127,7 @@ class AnalysisController extends ApiController
         ]);
         if ($sure) {
             $recommendations->rerank($analysis);
+            app(ReferenceService::class)->ensureSearch($analysis);
         }
         $analysis->refresh()->load(['profile', 'recommendations.pose.profile']);
 
@@ -144,6 +146,9 @@ class AnalysisController extends ApiController
         $name = trim((string) ($data['name'] ?? ''));
         $analysis->update(['character_name' => $name === '' ? null : $name, 'character_source' => $name === '' ? null : 'user']);
         $recommendations->rerank($analysis);
+        if ($name !== '') {
+            app(ReferenceService::class)->ensureSearch($analysis);
+        }
         $analysis->refresh()->load(['profile', 'recommendations.pose.profile']);
 
         return $this->ok(new AnalysisResource($analysis), $name === '' ? 'Character cleared' : 'Showing poses of '.$name.' first');

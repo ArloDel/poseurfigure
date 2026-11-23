@@ -3,12 +3,36 @@
 namespace App\Http\Resources;
 
 use App\Enums\AnalysisStatus;
+use App\Models\PoseReference;
+use App\Models\ReferenceSearch;
+use App\Support\CharacterKey;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin \App\Models\Analysis */
 class AnalysisResource extends JsonResource
 {
+    /** A Pinterest reference in the shape of a catalog pose, so the app can show both the same way. */
+    private static function reference(PoseReference $ref): array
+    {
+        return [
+            'id' => $ref->id,
+            'kind' => 'reference',
+            'slug' => 'reference-'.$ref->id,
+            'name' => $ref->character_name,
+            'category' => 'pinterest',
+            'difficulty' => '',
+            'profile' => $ref->profile?->slug,
+            // Found on Pinterest: not a curated catalog reference, and not AI-generated either.
+            'source' => 'pinterest',
+            'image_url' => URL::temporarySignedRoute('pose-references.image',
+                now()->addMinutes((int) config('figurepose.references.url_ttl_minutes')), ['poseReference' => $ref->id]),
+            'image_credit' => null,
+            'source_url' => $ref->source_url,
+        ];
+    }
+
     public function toArray(Request $request): array
     {
         $final = $this->status->isFinal();
@@ -49,7 +73,9 @@ class AnalysisResource extends JsonResource
                     // Pose ideas: same_character, similar_look or more; look = how alike the figures look (0-1).
                     'group' => $r->details['group'] ?? null,
                     'look' => $r->details['look'] ?? null,
-                    'pose' => (new PoseResource($r->pose))->resolve($request),
+                    'pose' => $r->pose_reference_id
+                        ? self::reference($r->reference)
+                        : (new PoseResource($r->pose))->resolve($request),
                 ])->all(),
             ),
             // "pose": ranked against the figure's pose. "type_only": the pose couldn't be read, so these are
@@ -65,6 +91,17 @@ class AnalysisResource extends JsonResource
                 'franchise' => $this->character_source === 'ai' ? ($this->character_details['franchise'] ?? null) : null,
                 'confidence' => $this->character_source === 'ai' ? ($this->character_details['confidence'] ?? null) : null,
             ]),
+            // Finding this character's poses on Pinterest (personal instances): progress for the app.
+            'references' => $this->when($this->status === AnalysisStatus::Completed && config('figurepose.references.pinterest'),
+                function () {
+                    $key = CharacterKey::from($this->character_name);
+                    $search = $key === '' ? null : ReferenceSearch::where('character_key', $key)->first();
+
+                    return $search === null ? null : [
+                        'status' => $search->status, 'total' => $search->total, 'checked' => $search->checked,
+                        'found' => $search->found, 'error' => $search->error,
+                    ];
+                }),
             'character_recognition' => $this->when($this->status === AnalysisStatus::Completed, fn () => [
                 'available' => (bool) config('figurepose.character.enabled'),
                 'provider' => config('figurepose.character.provider_name'),

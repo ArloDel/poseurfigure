@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\FigureProfileController;
 use App\Http\Controllers\Api\GeneratedImageController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\PoseController;
+use App\Http\Controllers\Api\PoseReferenceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -40,6 +41,9 @@ Route::prefix('v1')->group(function () {
     // Optional AI visuals (guests too). The file route is reached through a signed, expiring link.
     Route::post('/poses/{pose}/generate', [GeneratedImageController::class, 'store'])
         ->whereNumber('pose')->middleware('throttle:generation');
+    // Pinterest references (personal instances): private images behind an expiring link.
+    Route::get('/pose-references/{poseReference}/image', [PoseReferenceController::class, 'image'])
+        ->whereNumber('poseReference')->middleware('signed')->name('pose-references.image');
     Route::get('/generated-images/{generatedImage}', [GeneratedImageController::class, 'show'])->whereNumber('generatedImage');
     Route::get('/generated-images/{generatedImage}/file', [GeneratedImageController::class, 'file'])
         ->whereNumber('generatedImage')->middleware('signed')->name('generated-images.file');

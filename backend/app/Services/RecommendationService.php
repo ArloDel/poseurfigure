@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\AnalysisStatus;
 use App\Models\Analysis;
 use App\Models\PoseCatalog;
+use App\Models\PoseReference;
 
 /** Ranks catalog poses for an analysis and stores them (PRD 9.3, REC-01..07). */
 class RecommendationService
@@ -38,6 +39,23 @@ class RecommendationService
             ])
             ->values()
             ->all();
+
+        // References found on Pinterest for this figure type (personal instances): negative ids keep them apart
+        // from catalog poses. Only with pose ideas, which compare looks and characters.
+        if (! empty($appearance['embedding'])) {
+            $profileId = $analysis->figure_profile_id;
+            foreach (PoseReference::accepted()->where('figure_profile_id', $profileId)->get() as $ref) {
+                $candidates[] = [
+                    'id' => -$ref->id,
+                    'keypoints' => $ref->joint_positions['keypoints'],
+                    'image_size' => $ref->joint_positions['image_size'],
+                    'category' => 'pinterest',
+                    'difficulty' => null,
+                    'appearance' => $ref->appearance['embedding'] ?? null,
+                    'character' => $ref->character_name,
+                ];
+            }
+        }
 
         if ($candidates === [] || (empty($pose['keypoints']) && empty($appearance['embedding']))) {
             return $empty;
@@ -84,7 +102,8 @@ class RecommendationService
     private function rows(array $result): array
     {
         $rows = collect($result['results'] ?? [])->values()->map(fn (array $r, int $i) => [
-            'pose_catalog_id' => $r['id'],
+            'pose_catalog_id' => $r['id'] > 0 ? $r['id'] : null,
+            'pose_reference_id' => $r['id'] < 0 ? -$r['id'] : null,
             'rank' => $i + 1,
             'similarity_score' => $r['similarity'],
             'feasibility_score' => $r['feasibility'],
@@ -128,7 +147,10 @@ class RecommendationService
             'basis' => $ranking['basis'],
             'remaining' => $ranking['remaining'],
             'matcher_version' => $ranking['matcher_version'],
-            'shown_pose_ids' => array_values(array_unique([...$alreadyShown, ...array_column($ranking['rows'], 'pose_catalog_id')])),
+            'shown_pose_ids' => array_values(array_unique([...$alreadyShown, ...array_map(
+                fn (array $row) => $row['pose_reference_id'] ? -$row['pose_reference_id'] : $row['pose_catalog_id'],
+                $ranking['rows'],
+            )])),
         ];
         $analysis->update(['pose_data' => $data]);
     }
@@ -159,7 +181,7 @@ class RecommendationService
         }
 
         $shown = $analysis->pose_data['recommendation']['shown_pose_ids']
-            ?? $analysis->recommendations()->pluck('pose_catalog_id')->all();
+            ?? $analysis->recommendations()->get()->map->candidateId()->all();
 
         $ranking = $this->rank($analysis, $pose, $profile, $shown);
         if ($ranking['rows'] === []) {
