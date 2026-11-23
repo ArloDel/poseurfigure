@@ -20,6 +20,10 @@ class FigureClassifier(Protocol):
         """The figure's look as a unit vector: figures that look alike (same character, same suit) are close."""
         ...
 
+    def photo_kind(self, crop: Image.Image) -> dict[str, float]:
+        """Whether a found picture is a photo of a real toy: probability per kind in PHOTO_KINDS."""
+        ...
+
 
 # Several phrasings per profile; their logits are averaged (prompt ensembling).
 PROMPTS: dict[str, list[str]] = {
@@ -38,6 +42,21 @@ PROMPTS: dict[str, list[str]] = {
         "a photo of a mecha robot figure",
         "a photo of a transforming robot toy",
     ],
+}
+
+
+# What a found picture shows (Pinterest references): only photos of real toys are kept as pose ideas.
+# Several phrasings per kind, averaged; the probability of "figure" is the softmax over the kinds.
+PHOTO_KINDS: dict[str, list[str]] = {
+    "figure": [
+        "a photo of an action figure toy",
+        "a photo of a posable collectible figure",
+        "a product photo of a toy figure with visible joints",
+    ],
+    "render": ["a 3D render of a character", "a video game screenshot", "a CGI image of a superhero"],
+    "illustration": ["a drawing of a character", "comic book art", "a digital painting"],
+    "statue": ["a photo of a collectible statue on a decorative base", "a photo of a resin statue"],
+    "person": ["a photo of a person in a costume", "a cosplay photo", "a movie still of an actor"],
 }
 
 
@@ -85,6 +104,27 @@ class Siglip2Classifier:
 
     def embed(self, crop: Image.Image) -> list[float]:
         return [round(v, 5) for v in self._image(crop)[0].tolist()]
+
+    def photo_kind(self, crop: Image.Image) -> dict[str, float]:
+        """Probability per kind in PHOTO_KINDS (figure, render, illustration, statue, person), summing to 1."""
+        import torch
+
+        image = self._image(crop)
+        with self._lock:
+            if getattr(self, "_kind_text", None) is None:
+                texts = [p for k in PHOTO_KINDS for p in PHOTO_KINDS[k]]
+                tokens = self._processor(text=texts, padding="max_length", max_length=64, return_tensors="pt")
+                with torch.inference_mode():
+                    self._kind_text = _features(self._model.get_text_features(**tokens))
+        with torch.inference_mode():
+            logits = (image @ self._kind_text.T)[0] * self._model.logit_scale.exp() + self._model.logit_bias
+        per, i = [], 0
+        for k in PHOTO_KINDS:
+            n = len(PHOTO_KINDS[k])
+            per.append(logits[i:i + n].mean())
+            i += n
+        probs = torch.softmax(torch.stack(per), dim=0).tolist()
+        return {k: round(p, 4) for k, p in zip(PHOTO_KINDS, probs)}
 
     def classify(self, crop: Image.Image) -> dict[str, float]:
         import torch

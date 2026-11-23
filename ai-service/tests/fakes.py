@@ -25,9 +25,13 @@ class FakeDetector:
 class FakeClassifier:
     version = "fake-cls"
 
-    def __init__(self, scores=None):
+    def __init__(self, scores=None, figure_photo: float = 0.95):
         self.scores = scores or {"humanoid_v1": 0.8, "anime_v1": 0.15, "mecha_v1": 0.05}
+        self.figure_photo = figure_photo
         self.calls = 0
+
+    def photo_kind(self, crop):
+        return {"figure": self.figure_photo, "render": 1 - self.figure_photo, "illustration": 0.0, "statue": 0.0, "person": 0.0}
 
     def classify(self, crop):
         self.calls += 1

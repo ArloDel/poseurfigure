@@ -92,6 +92,13 @@ def test_unusable_photos_are_rejected_with_a_reason(dets, hidden, reason):
     assert not r.accepted and r.reason == reason
 
 
+def test_renders_statues_and_drawings_are_rejected():
+    p = Pipeline(FakeDetector(), FakeClassifier(figure_photo=0.3), FakeEstimator(), PROFILES)
+    r = wr.read(Image.new("RGB", (800, 1000), "white"), H, p)
+    assert not r.accepted and r.reason == "not_a_figure_photo" and r.data["photo_kind"]["render"] == 0.7
+    assert wr.read(Image.new("RGB", (800, 1000), "white"), H, pipe()).data["photo_kind"]["figure"] == 0.95
+
+
 def test_endpoints_are_off_unless_enabled():
     app.dependency_overrides[get_pinterest] = lambda: None
     assert client.post("/v1/references/search", json={"query": "x"}).status_code == 503

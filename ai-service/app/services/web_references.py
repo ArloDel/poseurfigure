@@ -8,7 +8,8 @@ search(): the same request pinterest.com's own search page makes (the approach f
 a pause between requests. It returns image URLs only: no pin link or author.
 read(): downloads one image (Pinterest's image CDN only, size-capped) and reads it with the same models as user
 photos. Only full-body, readable poses are kept: close-ups, figures held in a hand and photos without a figure
-are rejected with a reason, so they aren't fetched again.
+are rejected with a reason, so they aren't fetched again. So are game renders, illustrations, statues and cosplay
+photos: a zero-shot check (SigLIP 2) keeps only photos of real toys.
 """
 from __future__ import annotations
 
@@ -36,6 +37,11 @@ ANCHORS = ("neck", "left_hip", "right_hip")
 MIN_VISIBLE = 10
 # A figure box this small is a background figure or a detail shot, not the subject.
 MIN_BOX_AREA = 0.12
+# Probability that the picture is a photo of a real toy (SigLIP 2 zero-shot, PHOTO_KINDS), below which it is
+# rejected as a game render, illustration, statue or cosplay. Set on 26 black-suit Spider-Man results: renders
+# scored 0.01-0.50, a statue on a base 0.24, figure photos 0.84-1.00; one Hot Toys figure on a diorama base
+# scored 0.35 and is lost.
+MIN_FIGURE_PHOTO = 0.6
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
               "Chrome/139.0.0.0 Safari/537.36")
 
@@ -139,11 +145,14 @@ def read(image: Image.Image, profile: SkeletonProfile, pipeline: Pipeline) -> Re
     x0, y0, x1, y1 = figs[pipeline.pick(figs)].bbox
     if (x1 - x0) * (y1 - y0) < MIN_BOX_AREA:
         return ReadResult(False, "figure_too_small", {})
+    crop = im.crop((x0 * im.width, y0 * im.height, x1 * im.width, y1 * im.height))
+    kind = pipeline.classifier.photo_kind(crop)
+    if kind.get("figure", 0.0) < MIN_FIGURE_PHOTO:
+        return ReadResult(False, "not_a_figure_photo", {"photo_kind": kind})
     pose = build_pose(pipeline.estimator.estimate(im, (x0, y0, x1, y1)), profile, im.size)
     missing = [a for a in ANCHORS if pose.keypoints[a].visibility != "visible"]
     if missing or pose.visible_count < MIN_VISIBLE:
         return ReadResult(False, "pose_incomplete", {"visible_count": pose.visible_count})
-    crop = im.crop((x0 * im.width, y0 * im.height, x1 * im.width, y1 * im.height))
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=88)
     return ReadResult(True, None, {
@@ -152,4 +161,5 @@ def read(image: Image.Image, profile: SkeletonProfile, pipeline: Pipeline) -> Re
         "keypoints": {n: {"x": k.x, "y": k.y, "visibility": k.visibility} for n, k in pose.keypoints.items()},
         "joint_angles": pose.joint_angles, "orientation": pose.orientation, "visible_count": pose.visible_count,
         "appearance": pipeline.classifier.embed(crop), "appearance_version": pipeline.classifier.version,
+        "photo_kind": kind,
     })
