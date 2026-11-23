@@ -112,7 +112,7 @@ class _FavoriteRow extends StatelessWidget {
       child: Row(children: [
         Expanded(
           child: InkWell(
-            onTap: () => context.push('/poses/${pose.id}'),
+            onTap: () => context.push(pose.isReference ? '/references/${pose.id}' : '/poses/${pose.id}'),
             child: Row(children: [
               SizedBox(width: 84, height: 96, child: ComicPanel(child: PosePhoto(url: pose.imageUrl))),
               const SizedBox(width: 14),

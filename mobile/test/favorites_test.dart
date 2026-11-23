@@ -53,8 +53,8 @@ void main() {
   testWidgets('favorites are grouped by category, newest group first', (tester) async {
     final app = TestApp();
     await app.pump(tester);
-    await app.favorites.add(1); // action
-    await app.favorites.add(2); // cinematic, saved later
+    await app.favorites.add(samplePoses[0]); // action
+    await app.favorites.add(samplePoses[1]); // cinematic, saved later
     await signIn(tester);
     await openTab(tester, 'Favorites');
     await tester.pumpAndSettle();

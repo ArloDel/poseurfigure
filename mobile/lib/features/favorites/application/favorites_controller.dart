@@ -13,16 +13,19 @@ class FavoritesController extends AsyncNotifier<List<FavoriteItem>> {
     return ref.read(favoritesRepositoryProvider).list();
   }
 
-  bool contains(int poseId) => (state.value ?? const []).any((f) => f.pose.id == poseId);
+  /// Catalog poses and Pinterest references have separate ids: both must match.
+  bool contains(Pose pose) => (state.value ?? const []).any((f) => _same(f.pose, pose));
+
+  static bool _same(Pose a, Pose b) => a.id == b.id && a.kind == b.kind;
 
   /// Saves or removes [pose]. Removal shows at once and is undone if the server refuses.
   Future<void> toggle(Pose pose) async {
     final current = state.value ?? const <FavoriteItem>[];
-    final index = current.indexWhere((f) => f.pose.id == pose.id);
+    final index = current.indexWhere((f) => _same(f.pose, pose));
     if (index >= 0) {
       await remove(current[index]);
     } else {
-      final added = await ref.read(favoritesRepositoryProvider).add(pose.id);
+      final added = await ref.read(favoritesRepositoryProvider).add(pose);
       state = AsyncData([added, ...current.where((f) => f.id != added.id)]);
     }
   }

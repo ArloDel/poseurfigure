@@ -64,6 +64,9 @@ class FakePoseRepository implements PoseRepository {
 
   @override
   Future<Pose> detail(int id) async => samplePoses.firstWhere((p) => p.id == id);
+
+  @override
+  Future<Pose> reference(int id) async => Pose.fromJson(refJson(1, id)['pose'] as Map<String, dynamic>);
 }
 
 class FakeAuthRepository implements AuthRepository {
@@ -102,8 +105,8 @@ class FakeFavoritesRepository implements FavoritesRepository {
   Future<List<FavoriteItem>> list() async => items.reversed.toList();
 
   @override
-  Future<FavoriteItem> add(int poseId) async {
-    final item = FavoriteItem(id: _nextId++, pose: samplePoses.firstWhere((p) => p.id == poseId));
+  Future<FavoriteItem> add(Pose pose) async {
+    final item = FavoriteItem(id: _nextId++, pose: pose.isReference ? pose : samplePoses.firstWhere((p) => p.id == pose.id));
     items.add(item);
     return item;
   }

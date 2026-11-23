@@ -186,8 +186,7 @@ class _IdeaTile extends StatelessWidget {
           ]),
         ),
       ),
-      // Favorites hold catalog poses; Pinterest references aren't saved there.
-      if (!pose.isReference) Positioned(right: 6, top: 6, child: _SaveHeart(pose: pose)),
+      Positioned(right: 6, top: 6, child: _SaveHeart(pose: pose)),
     ]);
   }
 }
@@ -352,7 +351,7 @@ class _SaveHeart extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(favoritesProvider);
-    final saved = ref.read(favoritesProvider.notifier).contains(pose.id);
+    final saved = ref.read(favoritesProvider.notifier).contains(pose);
     return GlassPanel(
       overPhoto: true,
       radius: 14,

@@ -39,7 +39,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/references/:id',
         builder: (_, state) => ReferenceDetailScreen(
           referenceId: int.parse(state.pathParameters['id']!),
-          analysisId: state.uri.queryParameters['analysis'] ?? '',
+          analysisId: state.uri.queryParameters['analysis'],
         ),
       ),
       GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),

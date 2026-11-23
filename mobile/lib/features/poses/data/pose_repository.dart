@@ -43,6 +43,16 @@ class PoseRepository {
     }
   }
 
+  /// A Pinterest reference on its own (e.g. opened from Favorites).
+  Future<Pose> reference(int id) async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/pose-references/$id');
+      return Pose.fromJson(res.data!['data'] as Map<String, dynamic>);
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+  }
+
   Future<Pose> detail(int id) async {
     try {
       final res = await _dio.get<Map<String, dynamic>>('/poses/$id');
@@ -54,3 +64,7 @@ class PoseRepository {
 }
 
 final poseRepositoryProvider = Provider((ref) => PoseRepository(ref.watch(dioProvider)));
+
+final referencePoseProvider = FutureProvider.autoDispose.family<Pose, int>(
+  (ref, id) => ref.watch(poseRepositoryProvider).reference(id),
+);

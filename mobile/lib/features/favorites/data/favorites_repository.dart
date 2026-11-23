@@ -28,9 +28,11 @@ class FavoritesRepository {
     }
   }
 
-  Future<FavoriteItem> add(int poseId) async {
+  /// Saves a catalog pose or a Pinterest reference.
+  Future<FavoriteItem> add(Pose pose) async {
     try {
-      final res = await _dio.post<Map<String, dynamic>>('/favorites', data: {'pose_id': poseId});
+      final res = await _dio.post<Map<String, dynamic>>('/favorites',
+          data: pose.isReference ? {'reference_id': pose.id} : {'pose_id': pose.id});
       return FavoriteItem.fromJson(res.data!['data'] as Map<String, dynamic>);
     } catch (e) {
       throw ApiException.from(e);

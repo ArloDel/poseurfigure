@@ -276,7 +276,7 @@ class _SaveBarState extends ConsumerState<_SaveBar> {
   @override
   Widget build(BuildContext context) {
     ref.watch(favoritesProvider);
-    final saved = ref.read(favoritesProvider.notifier).contains(widget.pose.id);
+    final saved = ref.read(favoritesProvider.notifier).contains(widget.pose);
     return GlassPanel(
       radius: 24,
       padding: const EdgeInsets.all(10),

@@ -17,7 +17,7 @@ Future<void> toggleFavorite(BuildContext context, WidgetRef ref, Pose pose) asyn
     ));
     return;
   }
-  final wasSaved = ref.read(favoritesProvider.notifier).contains(pose.id);
+  final wasSaved = ref.read(favoritesProvider.notifier).contains(pose);
   try {
     await ref.read(favoritesProvider.notifier).toggle(pose);
     messenger.showSnackBar(SnackBar(content: Text(wasSaved ? 'Removed from favorites' : 'Saved to favorites')));
