@@ -289,7 +289,8 @@ Mobile (`--dart-define`): `API_BASE_URL`.
 - [x] Development stub provider, so nothing is billed and no photo leaves the machine
 - [x] A real image provider: OpenAI (added after Sprint 9, see "AI visuals")
 - [x] Pose ideas: character recognition, figure-look similarity, grouped grid (after Sprint 9, see "Pose ideas")
-- [ ] Pose ideas from web image search (needs a search API choice and key)
+- [x] Pose ideas from Pinterest, for a personally run instance (see "Pose references from Pinterest")
+- [ ] Pose ideas from a licensed web image search, for a public instance
 
 ## Sprint 8 status
 
@@ -347,6 +348,18 @@ The product's core idea: photograph a figure (often in its default pose) and get
 - **App.** A character card above the results, and the ideas as a grid in those three groups. Analyses made before this keep the older pose-matched list.
 
 **Measured on a black-suit Spider-Man photo** (November 2026): type humanoid (0.83), 15 of 16 joints, character named correctly by `gpt-5.4`. The catalog has no Spider-Man, and the closest looks (Darth Vader, Magneto, Superman) score 0.68, under the 0.7 "looks alike" line, so every idea landed in "More ideas" and the app says so. **The catalog is the limit**: 20 poses, 9 humanoid. Web image search (next step) and a bigger own collection are what make "same character first" work. The 0.7 line also needs tuning once the collection has several photos of one character.
+
+### Pose references from Pinterest (personal instances only)
+
+**Only for an instance you run for yourself.** Pinterest's terms don't allow automated collection, and every photo belongs to whoever posted it. Never turn this on for a server other people use, and don't republish the images.
+
+With `POSE_IDEAS_PINTEREST=true` in `.env`, naming the character (recognized or typed) starts one search per character in the background:
+
+1. The AI service searches Pinterest for "<character> figure" the way Pinterest's own search page does (approach from [pinscrape](https://github.com/iamatulsingh/pinscrape), MIT; pinscrape itself isn't used because it pins an old pydantic that FastAPI can't run with), pausing between requests. It returns up to `POSE_IDEAS_PINTEREST_IMAGES` (20) image URLs.
+2. Each image is read in its own job on the low-priority `references` queue, so an analysis never waits behind them: downloaded from Pinterest's image server only, then read with the same models as user photos. Only full-body, readable poses are kept. No figure, a figure too small in the frame, an incomplete pose (close-ups, figures held in a hand) and near-duplicates (look ≥ 0.97 alike) are rejected and remembered, so they aren't fetched again.
+3. Accepted images are stored privately and join the pose ideas as **Same character**, labelled "Pinterest", with steps from the user's figure. The app shows the search's progress and refreshes as images arrive. A character is searched again after `POSE_IDEAS_PINTEREST_REFRESH_DAYS` (30). References can't be saved to favorites or used for AI visuals yet.
+
+**Measured** (November 2026, black-suit Spider-Man, laptop with the CPU limits above): 18 new images found, 13 accepted, 5 rejected (3 no figure, 1 too small, 1 incomplete pose), 5.5 minutes for the first search; every idea then came from the same character. Some accepted images are game renders or statues rather than figure photos: the filter checks for a readable body, not for "is a toy". If Pinterest changes its site, the search stops working (the rest of the app is unaffected) and `/v1/references/search` returns 502.
 
 ## Pose catalog and matching
 
